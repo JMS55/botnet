@@ -23,13 +23,13 @@ impl Game {
             1717,
             Player {
                 network_memory: Arc::new(Mutex::new([0; NETWORK_MEMORY_SIZE])),
-                scripts: vec![Module::new(
+                script: Module::new(
                     &engine,
                     include_bytes!(
                         "../example_bot/target/wasm32-unknown-unknown/release/example_bot.wasm"
                     ),
                 )
-                .unwrap()],
+                .unwrap(),
             },
         );
 
@@ -49,5 +49,5 @@ impl Game {
 
 pub struct Player {
     pub network_memory: Arc<Mutex<[u8; NETWORK_MEMORY_SIZE]>>,
-    pub scripts: Vec<Module>,
+    pub script: Module,
 }

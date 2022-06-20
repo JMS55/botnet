@@ -15,8 +15,6 @@ impl Bot {
         bay: &Bay,
     ) -> Result<BotAction, Box<dyn Error>> {
         // Setup an instance of the bot script
-        let script =
-            players.get(&self.player_id).unwrap().value().scripts[self.script_slot].clone();
         let mut store = Store::new(
             engine,
             StoreLimitsBuilder::new()
@@ -24,6 +22,7 @@ impl Bot {
                 .build(),
         );
         store.limiter(|state| state);
+        let script = players.get(&self.player_id).unwrap().value().script.clone();
         let instance = Instance::new(&mut store, &script, &[])?;
         let instance_tick = instance
             .get_typed_func::<(u64, WASMUsize, WASMUsize, WASMUsize, WASMUsize), WASMUsize, _>(
