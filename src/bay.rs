@@ -15,7 +15,6 @@ impl Bay {
         let bot_id = thread_rng().gen();
         let bot = Bot {
             player_id: 1717,
-            script_slot: 0,
             held_resource: None,
         };
         let mut bots = HashMap::new();

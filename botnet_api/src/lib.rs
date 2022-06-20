@@ -35,7 +35,6 @@ impl Default for Cell {
 #[derive(Archive, Serialize, Deserialize)]
 pub struct Bot {
     pub player_id: u64,
-    pub script_slot: usize,
     pub held_resource: Option<Resource>,
 }
 
