@@ -1,0 +1,13 @@
+[package]
+name = "botnet"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+botnet_api = { version = "0.1", default-features = false, path = "./botnet_api" }
+wasmtime = "0.37"
+rkyv = "0.7"
+rayon = "1.5"
+dashmap = "5.3"
+rand = "0.8"
+extension-traits = "1.0"

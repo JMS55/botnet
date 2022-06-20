@@ -1,0 +1,11 @@
+[package]
+name = "botnet_api"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["dep:botnet_api_derive"]
+
+[dependencies]
+botnet_api_derive = { version = "0.1", optional = true, path = "./botnet_api_derive" }
+rkyv = "0.7"
