@@ -1,4 +1,4 @@
-use crate::bot_action::{BotAction, BotComputeActionExt};
+use crate::bot_compute_action::{BotAction, BotComputeActionExt};
 use crate::game::Player;
 use botnet_api::{Bay, Bot, Cell, BAY_SIZE};
 use dashmap::DashMap;
@@ -22,6 +22,7 @@ impl Bay {
         let mut bots = HashMap::new();
         bots.insert(bot_id, bot);
 
+        // TODO: Randomly generate
         let mut cells: [[Cell; BAY_SIZE]; BAY_SIZE] = Default::default();
         for i in 0..BAY_SIZE {
             cells[i][0] = Cell::Wall;
@@ -43,7 +44,7 @@ impl Bay {
         for bot_id in bot_ids_to_tick {
             if let Some(bot) = self.bots.get(&bot_id) {
                 let player = &players.get(&bot.player_id).unwrap();
-                if let Ok(bot_action) = bot.compute_action(bot_id, engine, &self, player) {
+                if let Ok(bot_action) = bot.compute_action(engine, &self, player) {
                     self.apply_bot_action(&bot.clone(), bot_action);
                 };
             }

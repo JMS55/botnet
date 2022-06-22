@@ -13,7 +13,6 @@ pub enum BotAction {
 impl Bot {
     fn compute_action(
         &self,
-        bot_id: u64,
         engine: &Engine,
         bay: &Bay,
         player: &Player,
@@ -26,7 +25,7 @@ impl Bot {
                     .memory_size(BOT_MEMORY_LIMIT)
                     .build(),
                 bot_action: None,
-                bot_id,
+                bot_id: self.id,
                 bay,
             },
         );
@@ -63,7 +62,7 @@ impl Bot {
         instance_tick.call(
             &mut store,
             (
-                bot_id,
+                self.id,
                 bay_ptr,
                 bay_size,
                 network_memory_ptr,
