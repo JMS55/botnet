@@ -26,6 +26,7 @@ impl Bot {
                     .memory_size(BOT_MEMORY_LIMIT)
                     .build(),
                 bot_action: None,
+                bot_id,
                 bay,
             },
         );
@@ -88,6 +89,7 @@ impl Bot {
 struct StoreData<'a> {
     limits: StoreLimits,
     bot_action: Option<BotAction>,
+    bot_id: u64,
     bay: &'a Bay,
 }
 
@@ -97,7 +99,7 @@ fn setup_linker(engine: &Engine) -> Result<Linker<StoreData>, Box<dyn Error>> {
 
     export_bot_action_check(
         BotAction::MoveTowards,
-        Bay::can_move_towards,
+        Bot::can_move_towards,
         "__move_towards",
         &mut linker,
     )?;
@@ -107,12 +109,12 @@ fn setup_linker(engine: &Engine) -> Result<Linker<StoreData>, Box<dyn Error>> {
 
 fn export_bot_action_check<F>(
     action: BotAction,
-    f: F,
+    check_function: F,
     exported_fn_name: &str,
     linker: &mut Linker<StoreData>,
 ) -> Result<(), Box<dyn Error>>
 where
-    F: (Fn(&Bay, usize, usize) -> Result<(), ActionError>) + Send + Sync + 'static,
+    F: (Fn(&Bot, &Bay, usize, usize) -> Result<(), ActionError>) + Send + Sync + 'static,
 {
     linker.func_wrap(
         "env",
@@ -120,7 +122,9 @@ where
         move |mut caller: Caller<StoreData>, x: u32, y: u32| {
             let result = match caller.data().bot_action {
                 None => {
-                    let check_result = (f)(caller.data().bay, x as usize, y as usize);
+                    let bay = caller.data().bay;
+                    let bot = bay.bots.get(&caller.data().bot_id).unwrap();
+                    let check_result = (check_function)(bot, bay, x as usize, y as usize);
                     if check_result.is_ok() {
                         caller.data_mut().bot_action = Some(action);
                     }

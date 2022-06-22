@@ -5,7 +5,6 @@ use dashmap::DashMap;
 use extension_traits::extension;
 use rand::{thread_rng, Rng};
 use std::collections::HashMap;
-use std::mem;
 use wasmtime::Engine;
 
 #[extension(pub trait BayExt)]
@@ -13,11 +12,15 @@ impl Bay {
     fn new() -> Self {
         let bot_id = thread_rng().gen();
         let bot = Bot {
+            id: bot_id,
             player_id: 1717,
+            energy: 1000,
             held_resource: None,
+            x: BAY_SIZE / 2,
+            y: BAY_SIZE / 2,
         };
         let mut bots = HashMap::new();
-        bots.insert(bot_id, (bot, BAY_SIZE / 2, BAY_SIZE / 2));
+        bots.insert(bot_id, bot);
 
         let mut cells: [[Cell; BAY_SIZE]; BAY_SIZE] = Default::default();
         for i in 0..BAY_SIZE {
@@ -38,43 +41,18 @@ impl Bay {
     fn tick_bots(&mut self, players: &DashMap<u64, Player>, engine: &Engine) {
         let bot_ids_to_tick = self.bots.keys().copied().collect::<Vec<_>>();
         for bot_id in bot_ids_to_tick {
-            if let Some((bot, bot_x, bot_y)) = self.bots.get(&bot_id) {
+            if let Some(bot) = self.bots.get(&bot_id) {
                 let player = &players.get(&bot.player_id).unwrap();
                 if let Ok(bot_action) = bot.compute_action(bot_id, engine, &self, player) {
-                    self.apply_bot_action(bot_action, bot_id, *bot_x, *bot_y);
+                    self.apply_bot_action(&bot.clone(), bot_action);
                 };
             }
         }
     }
 
-    fn apply_bot_action(&mut self, bot_action: BotAction, bot_id: u64, bot_x: usize, bot_y: usize) {
+    fn apply_bot_action(&mut self, bot: &Bot, bot_action: BotAction) {
         match bot_action {
             BotAction::MoveTowards => todo!(),
-            // BotAction::Move(direction) => self.apply_bot_move(direction, bot_id, bot_x, bot_y),
         }
     }
-
-    // fn apply_bot_move(&mut self, direction: Direction, bot_id: u64, bot_x: usize, bot_y: usize) {
-    //     let (target_x, target_y) = {
-    //         let (bot_x, bot_y) = (bot_x as isize, bot_y as isize);
-    //         let (target_x, target_y) = match direction {
-    //             Direction::Up => (bot_x, bot_y + 1),
-    //             Direction::Down => (bot_x, bot_y - 1),
-    //             Direction::Left => (bot_x - 1, bot_y),
-    //             Direction::Right => (bot_x + 1, bot_y),
-    //         };
-    //         let bay_bounds = 0..(BAY_SIZE as isize);
-    //         if !(bay_bounds.contains(&target_x) && bay_bounds.contains(&target_y)) {
-    //             return;
-    //         }
-    //         (target_x as usize, target_y as usize)
-    //     };
-
-    //     if self.cells[target_x][target_y] == Cell::Empty {
-    //         self.cells[target_x][target_y] =
-    //             mem::take(&mut self.cells[bot_x as usize][bot_y as usize]);
-    //         let (_, bot_x, bot_y) = self.bots.get_mut(&bot_id).unwrap();
-    //         (*bot_x, *bot_y) = (target_x, target_y);
-    //     }
-    // }
 }

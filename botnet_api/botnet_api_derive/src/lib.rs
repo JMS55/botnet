@@ -26,7 +26,7 @@ pub fn bot(_: TokenStream, wrapped_function: TokenStream) -> TokenStream {
 
             let network_memory = ::std::slice::from_raw_parts_mut(network_memory_ptr, network_memory_size);
 
-            #wrapped_function_name(bot_id, bay, network_memory);
+            #wrapped_function_name(bay.bots.get(&bot_id).unwrap(), bay, network_memory);
         }
 
         #[no_mangle]

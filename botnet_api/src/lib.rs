@@ -1,3 +1,4 @@
+use rkyv::with::Skip;
 use rkyv::{Archive, Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -10,14 +11,8 @@ pub const BAY_SIZE: usize = 32;
 
 #[derive(Archive, Serialize, Deserialize)]
 pub struct Bay {
-    pub bots: HashMap<u64, (Bot, usize, usize)>,
+    pub bots: HashMap<u64, Bot>,
     pub cells: [[Cell; BAY_SIZE]; BAY_SIZE],
-}
-
-impl Bay {
-    pub fn can_move_towards(&self, x: usize, y: usize) -> Result<(), ActionError> {
-        todo!()
-    }
 }
 
 #[derive(Archive, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
@@ -36,18 +31,30 @@ impl Default for Cell {
     }
 }
 
-#[derive(Archive, Serialize, Deserialize)]
+#[derive(Archive, Serialize, Deserialize, Clone)]
 pub struct Bot {
+    #[with(Skip)]
+    pub id: u64,
     pub player_id: u64,
+    pub energy: u32,
     pub held_resource: Option<Resource>,
+    pub x: usize,
+    pub y: usize,
 }
 
-#[cfg(feature = "default")]
-pub fn move_towards(x: usize, y: usize) -> Result<(), ActionError> {
-    extern "C" {
-        fn __move_towards(x: u32, y: u32) -> u32;
+impl Bot {
+    pub fn can_move_towards(&self, bay: &Bay, x: usize, y: usize) -> Result<(), ActionError> {
+        todo!()
     }
-    ActionError::wasm_to_host(unsafe { __move_towards(x as u32, y as u32) })
+}
+
+impl ArchivedBot {
+    pub fn move_towards(&self, x: usize, y: usize) -> Result<(), ActionError> {
+        extern "C" {
+            fn __move_towards(x: u32, y: u32) -> u32;
+        }
+        ActionError::wasm_to_host(unsafe { __move_towards(x as u32, y as u32) })
+    }
 }
 
 #[derive(Archive, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
