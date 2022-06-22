@@ -41,9 +41,10 @@ impl Game {
     }
 
     pub fn tick(&mut self) {
-        self.bays
-            .par_iter_mut()
-            .for_each(|bay| bay.tick(self.players.clone(), &self.engine));
+        self.bays.par_iter_mut().for_each(|bay| {
+            let players = self.players.clone();
+            bay.tick(&*players, &self.engine);
+        });
     }
 }
 

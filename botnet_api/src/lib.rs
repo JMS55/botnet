@@ -1,6 +1,5 @@
 use rkyv::{Archive, Deserialize, Serialize};
 use std::collections::HashMap;
-use std::error::Error;
 
 #[cfg(feature = "default")]
 pub use botnet_api_derive::bot;
@@ -8,12 +7,17 @@ pub use botnet_api_derive::bot;
 pub use rkyv;
 
 pub const BAY_SIZE: usize = 32;
-pub type WASMUsize = i32;
 
 #[derive(Archive, Serialize, Deserialize)]
 pub struct Bay {
-    pub bots: HashMap<u64, (Bot, u8, u8)>,
+    pub bots: HashMap<u64, (Bot, usize, usize)>,
     pub cells: [[Cell; BAY_SIZE]; BAY_SIZE],
+}
+
+impl Bay {
+    pub fn can_move_towards(&self, x: usize, y: usize) -> Result<(), ActionError> {
+        todo!()
+    }
 }
 
 #[derive(Archive, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
@@ -38,6 +42,14 @@ pub struct Bot {
     pub held_resource: Option<Resource>,
 }
 
+#[cfg(feature = "default")]
+pub fn move_towards(x: usize, y: usize) -> Result<(), ActionError> {
+    extern "C" {
+        fn __move_towards(x: u32, y: u32) -> u32;
+    }
+    ActionError::wasm_to_host(unsafe { __move_towards(x as u32, y as u32) })
+}
+
 #[derive(Archive, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub enum Resource {
     Gold,
@@ -47,41 +59,30 @@ pub enum Resource {
     Plastic,
 }
 
-pub enum BotAction {
-    None,
-    Move(Direction),
+pub enum ActionError {
+    ActionNotPossible,
+    NotEnoughEnergy,
+    AlreadyActed,
 }
 
-impl Into<WASMUsize> for BotAction {
-    fn into(self) -> WASMUsize {
-        match self {
-            Self::None => 0,
-            Self::Move(Direction::Up) => 1,
-            Self::Move(Direction::Down) => 2,
-            Self::Move(Direction::Left) => 3,
-            Self::Move(Direction::Right) => 4,
+#[doc(hidden)]
+impl ActionError {
+    fn wasm_to_host(result: u32) -> Result<(), ActionError> {
+        match result {
+            0 => Ok(()),
+            1 => Err(Self::ActionNotPossible),
+            2 => Err(Self::NotEnoughEnergy),
+            3 => Err(Self::AlreadyActed),
+            _ => unreachable!(),
         }
     }
-}
 
-impl TryFrom<WASMUsize> for BotAction {
-    type Error = Box<dyn Error>;
-
-    fn try_from(value: WASMUsize) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(Self::None),
-            1 => Ok(Self::Move(Direction::Up)),
-            2 => Ok(Self::Move(Direction::Down)),
-            3 => Ok(Self::Move(Direction::Left)),
-            4 => Ok(Self::Move(Direction::Right)),
-            _ => Err("Invalid value to convert to BotAction".into()),
+    pub fn host_to_wasm(result: Result<(), ActionError>) -> u32 {
+        match result {
+            Ok(()) => 0,
+            Err(Self::ActionNotPossible) => 1,
+            Err(Self::NotEnoughEnergy) => 2,
+            Err(Self::AlreadyActed) => 3,
         }
     }
-}
-
-pub enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
 }

@@ -8,6 +8,9 @@ pub fn bot(_: TokenStream, wrapped_function: TokenStream) -> TokenStream {
     let wrapped_function_name = &wrapped_function.sig.ident;
 
     quote! {
+        use ::botnet_api::*;
+
+        #[allow(unused_must_use)]
         #wrapped_function
 
         #[no_mangle]
@@ -17,13 +20,13 @@ pub fn bot(_: TokenStream, wrapped_function: TokenStream) -> TokenStream {
             bay_size: usize,
             network_memory_ptr: *mut u8,
             network_memory_size: usize,
-        ) -> i32 {
+        ) {
             let bay_data = ::std::slice::from_raw_parts(bay_ptr, bay_size);
             let bay = ::botnet_api::rkyv::archived_value::<::botnet_api::Bay>(bay_data, 0);
 
             let network_memory = ::std::slice::from_raw_parts_mut(network_memory_ptr, network_memory_size);
 
-            #wrapped_function_name(bot_id, bay, network_memory).into()
+            #wrapped_function_name(bot_id, bay, network_memory);
         }
 
         #[no_mangle]

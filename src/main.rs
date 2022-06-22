@@ -1,5 +1,5 @@
 mod bay;
-mod bot;
+mod bot_action;
 mod game;
 
 use game::Game;
