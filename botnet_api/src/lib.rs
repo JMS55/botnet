@@ -51,6 +51,11 @@ pub enum Resource {
     Plastic,
 }
 
+#[derive(Clone, Copy)]
+pub enum BotAction {
+    MoveTowards,
+}
+
 pub enum ActionError {
     ActionNotPossible,
     NotEnoughEnergy,

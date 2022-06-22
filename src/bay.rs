@@ -1,6 +1,6 @@
-use crate::bot_compute_action::{BotAction, BotComputeActionExt};
+use crate::bot_compute_action::BotComputeActionExt;
 use crate::game::Player;
-use botnet_api::{Bay, Bot, Cell, BAY_SIZE};
+use botnet_api::{Bay, Bot, BotAction, Cell, BAY_SIZE};
 use dashmap::DashMap;
 use extension_traits::extension;
 use rand::{thread_rng, Rng};

@@ -1,13 +1,8 @@
 use crate::game::{Player, BOT_MEMORY_LIMIT, NETWORK_MEMORY_SIZE};
-use botnet_api::{ActionError, Bay, Bot};
+use botnet_api::{ActionError, Bay, Bot, BotAction};
 use extension_traits::extension;
 use std::error::Error;
 use wasmtime::{Caller, Engine, Linker, Store, StoreLimits, StoreLimitsBuilder};
-
-#[derive(Clone, Copy)]
-pub enum BotAction {
-    MoveTowards,
-}
 
 #[extension(pub trait BotComputeActionExt)]
 impl Bot {
