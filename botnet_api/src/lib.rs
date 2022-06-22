@@ -33,8 +33,8 @@ impl Default for Cell {
 
 #[derive(Archive, Serialize, Deserialize, Clone)]
 pub struct Bot {
-    #[with(Skip)]
     pub id: u64,
+    #[with(Skip)]
     pub player_id: u64,
     pub energy: u32,
     pub held_resource: Option<Resource>,
