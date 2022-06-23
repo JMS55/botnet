@@ -46,7 +46,7 @@ impl Bay {
                 let player = &players.get(&bot.player_id).unwrap();
                 if let Ok(bot_action) = bot.compute_action(engine, &self, player) {
                     self.apply_bot_action(&bot.clone(), bot_action);
-                };
+                }
             }
         }
     }

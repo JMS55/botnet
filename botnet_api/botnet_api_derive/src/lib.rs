@@ -22,11 +22,13 @@ pub fn bot(_: TokenStream, wrapped_function: TokenStream) -> TokenStream {
             network_memory_size: usize,
         ) {
             let bay_data = ::std::slice::from_raw_parts(bay_ptr, bay_size);
-            let bay = ::botnet_api::rkyv::archived_value::<::botnet_api::Bay>(bay_data, 0);
+            let bay = ::botnet_api::rkyv::archived_root::<::botnet_api::Bay>(bay_data);
+
+            let bot = bay.bots.get(&bot_id).unwrap();
 
             let network_memory = ::std::slice::from_raw_parts_mut(network_memory_ptr, network_memory_size);
 
-            #wrapped_function_name(bay.bots.get(&bot_id).unwrap(), bay, network_memory);
+            #wrapped_function_name(bot, bay, network_memory);
         }
 
         #[no_mangle]
