@@ -8,7 +8,7 @@ pub use botnet_api_derive::bot;
 #[cfg(feature = "default")]
 pub use rkyv;
 
-pub const BAY_SIZE: usize = 32;
+pub const BAY_SIZE: usize = 64;
 
 #[derive(Archive, Serialize, Deserialize)]
 pub struct Bay {
@@ -24,12 +24,6 @@ pub enum Cell {
     Interconnect { next_bay_id: u64 },
     Antenna { controller_id: u64 },
     Bot { id: u64 },
-}
-
-impl Default for Cell {
-    fn default() -> Self {
-        Self::Empty
-    }
 }
 
 #[derive(Archive, Serialize, Deserialize, Clone)]

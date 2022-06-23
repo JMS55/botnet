@@ -23,7 +23,7 @@ impl Bay {
         bots.insert(bot_id, bot);
 
         // TODO: Randomly generate
-        let mut cells: [[Cell; BAY_SIZE]; BAY_SIZE] = Default::default();
+        let mut cells = [[Cell::Empty; BAY_SIZE]; BAY_SIZE];
         for i in 0..BAY_SIZE {
             cells[i][0] = Cell::Wall;
             cells[i][BAY_SIZE - 1] = Cell::Wall;
