@@ -46,8 +46,11 @@ pub enum Resource {
 }
 
 #[derive(Clone, Copy)]
-pub enum BotAction {
-    MoveTowards,
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
 }
 
 pub enum ActionError {

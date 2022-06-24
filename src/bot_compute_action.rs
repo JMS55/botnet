@@ -1,8 +1,9 @@
+use crate::bot_actions::*;
 use crate::game::{Player, BOT_MEMORY_LIMIT, NETWORK_MEMORY_SIZE};
-use botnet_api::{ActionError, Bay, Bot, BotAction};
+use botnet_api::{Bay, Bot};
 use extension_traits::extension;
 use std::error::Error;
-use wasmtime::{Caller, Engine, Linker, Store, StoreLimits, StoreLimitsBuilder};
+use wasmtime::{Engine, Linker, Store, StoreLimits, StoreLimitsBuilder};
 
 #[extension(pub trait BotComputeActionExt)]
 impl Bot {
@@ -25,6 +26,7 @@ impl Bot {
             },
         );
         store.limiter(|data| &mut data.limits);
+        // TODO: Store and reuse the linker per bay or something
         let linker = setup_linker(engine)?;
         let instance = linker.instantiate(&mut store, &player.script)?;
 
@@ -76,58 +78,19 @@ impl Bot {
         store
             .data()
             .bot_action
-            .ok_or("Bot script did not set an action".into())
+            .ok_or_else(|| "Bot script did not set an action".into())
     }
 }
 
-struct StoreData<'a> {
+pub struct StoreData<'a> {
     limits: StoreLimits,
-    bot_action: Option<BotAction>,
-    bot_id: u64,
-    bay: &'a Bay,
+    pub bot_action: Option<BotAction>,
+    pub bot_id: u64,
+    pub bay: &'a Bay,
 }
 
-// TODO: Store and reuse the linker per bay or something
 fn setup_linker(engine: &Engine) -> Result<Linker<StoreData>, Box<dyn Error>> {
     let mut linker = Linker::new(engine);
-
-    export_bot_action_check(
-        BotAction::MoveTowards,
-        Bot::can_move_towards,
-        "__move_towards",
-        &mut linker,
-    )?;
-
+    export_move_towards(&mut linker)?;
     Ok(linker)
-}
-
-fn export_bot_action_check<F>(
-    action: BotAction,
-    check_function: F,
-    exported_fn_name: &str,
-    linker: &mut Linker<StoreData>,
-) -> Result<(), Box<dyn Error>>
-where
-    F: (Fn(&Bot, &Bay, usize, usize) -> Result<(), ActionError>) + Send + Sync + 'static,
-{
-    linker.func_wrap(
-        "env",
-        exported_fn_name,
-        move |mut caller: Caller<StoreData>, x: u32, y: u32| {
-            let result = match caller.data().bot_action {
-                None => {
-                    let bay = caller.data().bay;
-                    let bot = bay.bots.get(&caller.data().bot_id).unwrap();
-                    let check_result = (check_function)(bot, bay, x as usize, y as usize);
-                    if check_result.is_ok() {
-                        caller.data_mut().bot_action = Some(action);
-                    }
-                    check_result
-                }
-                _ => Err(ActionError::AlreadyActed),
-            };
-            ActionError::host_to_wasm(result)
-        },
-    )?;
-    Ok(())
 }

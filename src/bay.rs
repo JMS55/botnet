@@ -1,6 +1,7 @@
+use crate::bot_actions::*;
 use crate::bot_compute_action::BotComputeActionExt;
 use crate::game::Player;
-use botnet_api::{Bay, Bot, BotAction, Cell, BAY_SIZE};
+use botnet_api::{Bay, Bot, Cell, BAY_SIZE};
 use dashmap::DashMap;
 use extension_traits::extension;
 use rand::{thread_rng, Rng};
@@ -42,18 +43,18 @@ impl Bay {
     fn tick_bots(&mut self, players: &DashMap<u64, Player>, engine: &Engine) {
         let bot_ids_to_tick = self.bots.keys().copied().collect::<Vec<_>>();
         for bot_id in bot_ids_to_tick {
-            if let Some(bot) = self.bots.get(&bot_id) {
+            if let Some(bot) = self.bots.get_mut(&bot_id) {
                 let player = &players.get(&bot.player_id).unwrap();
                 if let Ok(bot_action) = bot.compute_action(engine, &self, player) {
-                    self.apply_bot_action(&bot.clone(), bot_action);
+                    self.apply_bot_action(bot, bot_action);
                 }
             }
         }
     }
 
-    fn apply_bot_action(&mut self, bot: &Bot, bot_action: BotAction) {
+    fn apply_bot_action(&mut self, bot: &mut Bot, bot_action: BotAction) {
         match bot_action {
-            BotAction::MoveTowards => todo!(),
+            BotAction::MoveTowards(direction) => apply_bot_move_towards(self, bot, direction),
         }
     }
 }

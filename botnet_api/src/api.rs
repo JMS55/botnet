@@ -1,38 +1,54 @@
-use crate::{ActionError, ArchivedBot, Bay, Bot};
+use crate::{ActionError, ArchivedBot, Direction};
 
-impl Bot {
-    pub fn can_move_towards(&self, bay: &Bay, x: usize, y: usize) -> Result<(), ActionError> {
-        todo!()
+impl ArchivedBot {
+    pub fn move_towards(&self, direction: Direction) -> Result<(), ActionError> {
+        extern "C" {
+            fn __move_towards(direction: u32) -> u32;
+        }
+        ActionError::wasm_to_rust(unsafe { __move_towards(direction.rust_to_wasm()) }).unwrap()
     }
 }
 
-impl ArchivedBot {
-    pub fn move_towards(&self, x: usize, y: usize) -> Result<(), ActionError> {
-        extern "C" {
-            fn __move_towards(x: u32, y: u32) -> u32;
+#[doc(hidden)]
+impl Direction {
+    pub fn rust_to_wasm(&self) -> u32 {
+        match self {
+            Self::Up => 0,
+            Self::Down => 1,
+            Self::Left => 2,
+            Self::Right => 3,
         }
-        ActionError::wasm_to_host(unsafe { __move_towards(x as u32, y as u32) })
+    }
+
+    pub fn wasm_to_rust(direction: u32) -> Result<Self, ()> {
+        match direction {
+            0 => Ok(Self::Up),
+            1 => Ok(Self::Down),
+            2 => Ok(Self::Left),
+            3 => Ok(Self::Right),
+            _ => Err(()),
+        }
     }
 }
 
 #[doc(hidden)]
 impl ActionError {
-    fn wasm_to_host(result: u32) -> Result<(), ActionError> {
-        match result {
-            0 => Ok(()),
-            1 => Err(Self::ActionNotPossible),
-            2 => Err(Self::NotEnoughEnergy),
-            3 => Err(Self::AlreadyActed),
-            _ => unreachable!(),
-        }
-    }
-
-    pub fn host_to_wasm(result: Result<(), ActionError>) -> u32 {
+    pub fn rust_to_wasm(result: Result<(), Self>) -> u32 {
         match result {
             Ok(()) => 0,
             Err(Self::ActionNotPossible) => 1,
             Err(Self::NotEnoughEnergy) => 2,
             Err(Self::AlreadyActed) => 3,
+        }
+    }
+
+    pub fn wasm_to_rust(result: u32) -> Result<Result<(), Self>, ()> {
+        match result {
+            0 => Ok(Ok(())),
+            1 => Ok(Err(Self::ActionNotPossible)),
+            2 => Ok(Err(Self::NotEnoughEnergy)),
+            3 => Ok(Err(Self::AlreadyActed)),
+            _ => Err(()),
         }
     }
 }
