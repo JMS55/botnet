@@ -1,6 +1,6 @@
 mod bay;
 mod bot_actions;
-mod bot_compute_action;
+mod compute_bot_action;
 mod game;
 
 use game::Game;

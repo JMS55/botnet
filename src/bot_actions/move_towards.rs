@@ -1,5 +1,5 @@
 use super::BotAction;
-use crate::bot_compute_action::StoreData;
+use crate::compute_bot_action::StoreData;
 use botnet_api::{ActionError, Bay, Bot, Cell, Direction, BAY_SIZE};
 use std::error::Error;
 use wasmtime::{Caller, Linker};
@@ -26,7 +26,9 @@ pub fn bot_can_move_towards(bot: &Bot, direction: Direction, bay: &Bay) -> Resul
     }
 }
 
-pub fn apply_bot_move_towards(bay: &mut Bay, bot: &mut Bot, direction: Direction) {
+pub fn apply_bot_move_towards(bay: &mut Bay, bot_id: u64, direction: Direction) {
+    let bot = bay.bots.get_mut(&bot_id).unwrap();
+
     bay.cells[bot.x][bot.y] = Cell::Empty;
     let new_position = match direction {
         Direction::Up => &mut bay.cells[bot.x][bot.y - 1],
