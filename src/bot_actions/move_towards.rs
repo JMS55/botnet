@@ -44,7 +44,7 @@ pub fn apply_bot_move_towards(bay: &mut Bay, bot_id: u64, direction: Direction) 
 pub fn export_move_towards(linker: &mut Linker<StoreData>) -> Result<(), Box<dyn Error>> {
     let function = |mut caller: Caller<StoreData>, direction: u32| {
         let result = (|| {
-            if caller.data().bot_action.is_none() {
+            if caller.data().bot_action.is_some() {
                 return Err(ActionError::AlreadyActed);
             }
 
