@@ -30,13 +30,15 @@ pub fn apply_bot_move_towards(bay: &mut Bay, bot_id: u64, direction: Direction) 
     let bot = bay.bots.get_mut(&bot_id).unwrap();
 
     bay.cells[bot.x][bot.y] = Cell::Empty;
-    let new_position = match direction {
-        Direction::Up => &mut bay.cells[bot.x][bot.y - 1],
-        Direction::Down => &mut bay.cells[bot.x][bot.y + 1],
-        Direction::Left => &mut bay.cells[bot.x - 1][bot.y],
-        Direction::Right => &mut bay.cells[bot.x + 1][bot.y],
+
+    let (new_x, new_y) = match direction {
+        Direction::Up => (bot.x, bot.y - 1),
+        Direction::Down => (bot.x, bot.y + 1),
+        Direction::Left => (bot.x - 1, bot.y),
+        Direction::Right => (bot.x + 1, bot.y),
     };
-    *new_position = Cell::Bot { id: bot.id };
+    bay.cells[new_x][new_y] = Cell::Bot { id: bot.id };
+    (bot.x, bot.y) = (new_x, new_y);
 
     bot.energy -= ENERGY_REQUIRED;
 }
