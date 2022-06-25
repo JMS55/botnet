@@ -7,6 +7,8 @@ use game::Game;
 use std::thread;
 
 fn main() {
+    env_logger::init();
+
     let mut game = Game::new();
     loop {
         game.tick();

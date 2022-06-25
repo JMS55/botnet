@@ -1,7 +1,7 @@
 use crate::bay::BayExt;
 use botnet_api::Bay;
 use dashmap::DashMap;
-use rayon::prelude::{IntoParallelRefMutIterator, ParallelIterator};
+use rayon::prelude::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
 use std::sync::{Arc, Mutex};
 use wasmtime::{Engine, Module};
 
@@ -41,10 +41,13 @@ impl Game {
     }
 
     pub fn tick(&mut self) {
-        self.bays.par_iter_mut().for_each(|bay| {
-            let players = self.players.clone();
-            bay.tick(&*players, &self.engine);
-        });
+        self.bays
+            .par_iter_mut()
+            .enumerate()
+            .for_each(|(bay_id, bay)| {
+                let players = self.players.clone();
+                bay.tick(bay_id, &*players, &self.engine);
+            });
     }
 }
 

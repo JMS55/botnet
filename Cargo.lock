@@ -122,7 +122,9 @@ version = "0.1.0"
 dependencies = [
  "botnet_api",
  "dashmap",
+ "env_logger",
  "extension-traits",
+ "log",
  "rand",
  "rayon",
  "rkyv",

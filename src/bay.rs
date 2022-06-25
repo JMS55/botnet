@@ -1,27 +1,39 @@
 use crate::bot_actions::*;
 use crate::compute_bot_action::compute_bot_action;
 use crate::game::Player;
-use botnet_api::{Bay, Bot, Cell, BAY_SIZE};
+use botnet_api::{Bay, Bot, Cell, Resource, BAY_SIZE};
 use dashmap::DashMap;
 use extension_traits::extension;
-use rand::{thread_rng, Rng};
+use log::info;
 use std::collections::HashMap;
 use wasmtime::Engine;
 
 #[extension(pub trait BayExt)]
 impl Bay {
     fn new() -> Self {
-        let bot_id = thread_rng().gen();
-        let bot = Bot {
-            id: bot_id,
-            player_id: 1717,
-            energy: 1000,
-            held_resource: None,
-            x: BAY_SIZE / 2,
-            y: BAY_SIZE / 2,
-        };
         let mut bots = HashMap::new();
-        bots.insert(bot_id, bot);
+        bots.insert(
+            22,
+            Bot {
+                id: 22,
+                player_id: 1717,
+                energy: 1000,
+                held_resource: None,
+                x: BAY_SIZE / 2,
+                y: BAY_SIZE / 2,
+            },
+        );
+        bots.insert(
+            33,
+            Bot {
+                id: 33,
+                player_id: 1717,
+                energy: 1000,
+                held_resource: None,
+                x: BAY_SIZE / 2 + 3,
+                y: BAY_SIZE / 2 + 3,
+            },
+        );
 
         // TODO: Randomly generate
         let mut cells = [[Cell::Empty; BAY_SIZE]; BAY_SIZE];
@@ -31,12 +43,16 @@ impl Bay {
             cells[0][i] = Cell::Wall;
             cells[BAY_SIZE - 1][i] = Cell::Wall;
         }
-        cells[BAY_SIZE / 2][BAY_SIZE / 2] = Cell::Bot { id: bot_id };
+
+        cells[1][1] = Cell::Resource(Resource::Gold);
+        cells[BAY_SIZE / 2][BAY_SIZE / 2] = Cell::Bot { id: 22 };
+        cells[BAY_SIZE / 2 + 3][BAY_SIZE / 2 + 3] = Cell::Bot { id: 33 };
 
         Self { bots, cells }
     }
 
-    fn tick(&mut self, players: &DashMap<u64, Player>, engine: &Engine) {
+    fn tick(&mut self, bay_id: usize, players: &DashMap<u64, Player>, engine: &Engine) {
+        info!("Bay[{bay_id}] starting tick");
         let bots_ticked = self.tick_bots(players, engine);
         self.recharge_bots(&bots_ticked);
     }
@@ -46,8 +62,14 @@ impl Bay {
         for bot_id in &bot_ids_to_tick {
             if let Some(bot) = self.bots.get(&bot_id) {
                 let player = &players.get(&bot.player_id).unwrap();
-                if let Ok(bot_action) = compute_bot_action(*bot_id, engine, &self, player) {
-                    self.apply_bot_action(*bot_id, bot_action);
+                match compute_bot_action(*bot_id, engine, &self, player) {
+                    Ok(bot_action) => {
+                        info!("Bot[{bot_id}] chose action {:?}", bot_action);
+                        self.apply_bot_action(*bot_id, bot_action);
+                    }
+                    result => {
+                        info!("Bot[{bot_id}] did not choose an action: {:?}", result);
+                    }
                 }
             }
         }

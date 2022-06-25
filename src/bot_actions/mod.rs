@@ -6,7 +6,7 @@ pub use move_towards::*;
 
 use botnet_api::Direction;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum BotAction {
     MoveTowards(Direction),
     HarvestResource { x: u32, y: u32 },
