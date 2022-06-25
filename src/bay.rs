@@ -65,6 +65,7 @@ impl Bay {
     fn apply_bot_action(&mut self, bot_id: u64, bot_action: BotAction) {
         match bot_action {
             BotAction::MoveTowards(direction) => apply_bot_move_towards(self, bot_id, direction),
+            BotAction::HarvestResource { x, y } => apply_bot_harvest_resource(self, bot_id, x, y),
         }
     }
 }

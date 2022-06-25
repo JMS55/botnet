@@ -88,5 +88,6 @@ pub struct StoreData<'a> {
 fn setup_linker(engine: &Engine) -> Result<Linker<StoreData>, Box<dyn Error>> {
     let mut linker = Linker::new(engine);
     export_move_towards(&mut linker)?;
+    export_harvest_resource(&mut linker)?;
     Ok(linker)
 }

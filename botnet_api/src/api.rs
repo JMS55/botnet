@@ -7,6 +7,13 @@ impl ArchivedBot {
         }
         ActionError::wasm_to_rust(unsafe { __move_towards(direction.rust_to_wasm()) }).unwrap()
     }
+
+    pub fn harvest_resource(&self, x: u32, y: u32) -> Result<(), ActionError> {
+        extern "C" {
+            fn __harvest_resource(x: u32, y: u32) -> u32;
+        }
+        ActionError::wasm_to_rust(unsafe { __harvest_resource(x, y) }).unwrap()
+    }
 }
 
 #[doc(hidden)]

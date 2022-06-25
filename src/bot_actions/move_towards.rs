@@ -6,7 +6,7 @@ use wasmtime::{Caller, Linker};
 
 const ENERGY_REQUIRED: u32 = 10;
 
-pub fn bot_can_move_towards(bot: &Bot, direction: Direction, bay: &Bay) -> Result<(), ActionError> {
+fn bot_can_move_towards(bot: &Bot, direction: Direction, bay: &Bay) -> Result<(), ActionError> {
     if bot.energy < ENERGY_REQUIRED {
         return Err(ActionError::NotEnoughEnergy);
     }
