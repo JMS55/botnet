@@ -37,17 +37,27 @@ impl Bay {
     }
 
     fn tick(&mut self, players: &DashMap<u64, Player>, engine: &Engine) {
-        self.tick_bots(players, engine);
+        let bots_ticked = self.tick_bots(players, engine);
+        self.recharge_bots(&bots_ticked);
     }
 
-    fn tick_bots(&mut self, players: &DashMap<u64, Player>, engine: &Engine) {
+    fn tick_bots(&mut self, players: &DashMap<u64, Player>, engine: &Engine) -> Vec<u64> {
         let bot_ids_to_tick = self.bots.keys().copied().collect::<Vec<_>>();
-        for bot_id in bot_ids_to_tick {
+        for bot_id in &bot_ids_to_tick {
             if let Some(bot) = self.bots.get(&bot_id) {
                 let player = &players.get(&bot.player_id).unwrap();
-                if let Ok(bot_action) = compute_bot_action(bot_id, engine, &self, player) {
-                    self.apply_bot_action(bot_id, bot_action);
+                if let Ok(bot_action) = compute_bot_action(*bot_id, engine, &self, player) {
+                    self.apply_bot_action(*bot_id, bot_action);
                 }
+            }
+        }
+        bot_ids_to_tick
+    }
+
+    fn recharge_bots(&mut self, bot_ids: &[u64]) {
+        for bot_id in bot_ids {
+            if let Some(bot) = self.bots.get_mut(bot_id) {
+                bot.energy += 5;
             }
         }
     }
