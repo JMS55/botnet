@@ -23,17 +23,6 @@ impl Bay {
                 y: BAY_SIZE / 2,
             },
         );
-        bots.insert(
-            33,
-            Bot {
-                id: 33,
-                player_id: 1717,
-                energy: 1000,
-                held_resource: None,
-                x: BAY_SIZE / 2 + 3,
-                y: BAY_SIZE / 2 + 3,
-            },
-        );
 
         // TODO: Randomly generate
         let mut cells = [[Cell::Empty; BAY_SIZE]; BAY_SIZE];
@@ -46,7 +35,6 @@ impl Bay {
 
         cells[1][1] = Cell::Resource(Resource::Gold);
         cells[BAY_SIZE / 2][BAY_SIZE / 2] = Cell::Bot { id: 22 };
-        cells[BAY_SIZE / 2 + 3][BAY_SIZE / 2 + 3] = Cell::Bot { id: 33 };
 
         Self { bots, cells }
     }

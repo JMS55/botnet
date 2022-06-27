@@ -14,8 +14,31 @@ impl ArchivedBot {
         }
         ActionError::wasm_to_rust(unsafe { __harvest_resource(x, y) }).unwrap()
     }
+
+    pub fn move_along_path(&self, path: &mut Vec<(u32, u32)>) -> Result<(), ActionError> {
+        match path.last().copied() {
+            Some((x, y)) => {
+                let x = x as i32 - self.x as i32;
+                let y = self.y as i32 - y as i32;
+                let direction = match (x, y) {
+                    (1, 0) => Direction::Right,
+                    (-1, 0) => Direction::Left,
+                    (0, 1) => Direction::Up,
+                    (0, -1) => Direction::Down,
+                    _ => return Err(ActionError::ActionNotPossible),
+                };
+                let move_result = self.move_towards(direction);
+                if move_result.is_ok() {
+                    path.pop().unwrap();
+                }
+                move_result
+            }
+            _ => Err(ActionError::ActionNotPossible),
+        }
+    }
 }
 
+#[cfg(feature = "default")]
 pub fn log_debug(message: &str) {
     extern "C" {
         fn __log_debug(pointer: u32, length: u32);

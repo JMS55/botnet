@@ -9,6 +9,7 @@ pub fn bot(_: TokenStream, wrapped_function: TokenStream) -> TokenStream {
 
     quote! {
         use ::botnet_api::*;
+        use ::botnet_api::pathfinding::*;
 
         #[allow(unused_must_use)]
         #wrapped_function

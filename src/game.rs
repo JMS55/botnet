@@ -26,7 +26,7 @@ impl Game {
                 script: Module::new(
                     &engine,
                     include_bytes!(
-                        "../example_bot/target/wasm32-unknown-unknown/debug/example_bot.wasm"
+                        "../example_bot/target/wasm32-unknown-unknown/release/example_bot.wasm"
                     ),
                 )
                 .unwrap(),

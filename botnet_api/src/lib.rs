@@ -1,4 +1,5 @@
 mod api;
+pub mod pathfinding;
 
 use rkyv::{Archive, Deserialize, Serialize};
 use std::collections::HashMap;
@@ -19,6 +20,7 @@ pub struct Bay {
 }
 
 #[derive(Archive, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[archive(compare(PartialEq))]
 pub enum Cell {
     Empty,
     Wall,
@@ -39,6 +41,7 @@ pub struct Bot {
 }
 
 #[derive(Archive, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[archive(compare(PartialEq))]
 pub enum Resource {
     Gold,
     Copper,
