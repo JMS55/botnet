@@ -22,7 +22,6 @@ pub fn compute_bot_action(
             bay,
         },
     );
-    store.set_epoch_deadline(BOT_TIME_LIMIT);
     store.limiter(|data| &mut data.limits);
     let linker = setup_linker(engine)?;
     let instance = linker.instantiate(&mut store, &player.script)?;
@@ -60,6 +59,7 @@ pub fn compute_bot_action(
     )?;
 
     // Tick the bot instance to compute an action for the bot to take
+    store.set_epoch_deadline(BOT_TIME_LIMIT);
     instance_tick.call(
         &mut store,
         (
