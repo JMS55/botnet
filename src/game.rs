@@ -39,7 +39,7 @@ impl Game {
 
         let epoch_increment_thread = thread::spawn({
             let engine = engine.clone();
-            move || {
+            move || loop {
                 thread::sleep(Duration::from_millis(1));
                 engine.increment_epoch();
             }
