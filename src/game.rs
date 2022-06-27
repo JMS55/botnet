@@ -3,9 +3,11 @@ use botnet_api::Bay;
 use dashmap::DashMap;
 use rayon::prelude::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
 use std::sync::{Arc, Mutex};
-use wasmtime::{Engine, Module};
+use std::time::Duration;
+use wasmtime::{Config, Engine, Module};
 
 pub const NETWORK_MEMORY_SIZE: usize = 1_000_000; // 1mb
+pub const BOT_TIME_LIMIT: Duration = Duration::from_millis(50);
 pub const BOT_MEMORY_LIMIT: usize = 4_000_000; // 4mb
 
 pub struct Game {
@@ -16,7 +18,7 @@ pub struct Game {
 
 impl Game {
     pub fn new() -> Self {
-        let engine = Engine::default();
+        let engine = Engine::new(&Config::new().epoch_interruption(true)).unwrap();
 
         let players = DashMap::new();
         players.insert(
