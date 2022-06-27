@@ -5,6 +5,7 @@ use botnet_api::{Bay, Bot, Cell, Resource, BAY_SIZE};
 use dashmap::DashMap;
 use extension_traits::extension;
 use log::info;
+use rand::{thread_rng, Rng};
 use std::collections::HashMap;
 use wasmtime::Engine;
 
@@ -24,7 +25,6 @@ impl Bay {
             },
         );
 
-        // TODO: Randomly generate
         let mut cells = [[Cell::Empty; BAY_SIZE]; BAY_SIZE];
         for i in 0..BAY_SIZE {
             cells[i][0] = Cell::Wall;
@@ -33,8 +33,19 @@ impl Bay {
             cells[BAY_SIZE - 1][i] = Cell::Wall;
         }
 
-        cells[1][1] = Cell::Resource(Resource::Gold);
         cells[BAY_SIZE / 2][BAY_SIZE / 2] = Cell::Bot { id: 22 };
+
+        let mut rng = thread_rng();
+        for _ in 0..100 {
+            loop {
+                let (x, y): (usize, usize) =
+                    (rng.gen_range(0..BAY_SIZE), rng.gen_range(0..BAY_SIZE));
+                if cells[x][y] == Cell::Empty {
+                    cells[x][y] = Cell::Resource(Resource::Silicon);
+                    break;
+                }
+            }
+        }
 
         Self { bots, cells }
     }
