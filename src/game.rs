@@ -20,7 +20,7 @@ pub struct Game {
 
 impl Game {
     pub fn new() -> Self {
-        let engine = Engine::new(&Config::new().epoch_interruption(false)).unwrap();
+        let engine = Engine::new(&Config::new().epoch_interruption(true)).unwrap();
 
         let players = DashMap::new();
         players.insert(
