@@ -8,7 +8,7 @@ use std::time::Duration;
 use wasmtime::{Config, Engine, Module};
 
 pub const NETWORK_MEMORY_SIZE: usize = 1_000_000; // 1mb
-pub const BOT_TIME_LIMIT: u64 = 5; // 5ms
+pub const BOT_TIME_LIMIT: u64 = 2; // 2ms
 pub const BOT_MEMORY_LIMIT: usize = 4_000_000; // 4mb
 
 pub struct Game {
@@ -20,7 +20,7 @@ pub struct Game {
 
 impl Game {
     pub fn new() -> Self {
-        let engine = Engine::new(&Config::new().epoch_interruption(true)).unwrap();
+        let engine = Engine::new(&Config::new().epoch_interruption(false)).unwrap();
 
         let players = DashMap::new();
         players.insert(
