@@ -77,6 +77,7 @@ pub fn compute_bot_action(
         network_memory_pointer as usize,
         &mut *network_memory,
     )?;
+    drop(network_memory);
 
     // Return the action the bot wants to take, if any
     store
