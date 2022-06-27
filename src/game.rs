@@ -2,6 +2,7 @@ use crate::bay::BayExt;
 use botnet_api::Bay;
 use dashmap::DashMap;
 use rayon::prelude::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -15,6 +16,7 @@ pub struct Game {
     players: Arc<DashMap<u64, Player>>,
     bays: Vec<Bay>,
     engine: Engine,
+    epoch_increment_stop_signal: Arc<AtomicBool>,
 }
 
 impl Game {
@@ -36,11 +38,16 @@ impl Game {
             },
         );
 
+        let epoch_increment_stop_signal = Arc::new(AtomicBool::new(false));
         thread::spawn({
             let engine = engine.clone();
+            let stop_signal = Arc::clone(&epoch_increment_stop_signal);
             move || loop {
                 thread::sleep(Duration::from_millis(1));
                 engine.increment_epoch();
+                if stop_signal.load(Ordering::SeqCst) {
+                    return;
+                }
             }
         });
 
@@ -48,6 +55,7 @@ impl Game {
             players: Arc::new(players),
             bays: vec![Bay::new()],
             engine,
+            epoch_increment_stop_signal,
         }
     }
 
@@ -59,6 +67,13 @@ impl Game {
                 let players = self.players.clone();
                 bay.tick(bay_id, &*players, &self.engine);
             });
+    }
+}
+
+impl Drop for Game {
+    fn drop(&mut self) {
+        self.epoch_increment_stop_signal
+            .store(true, Ordering::SeqCst);
     }
 }
 
