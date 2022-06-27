@@ -16,6 +16,15 @@ impl ArchivedBot {
     }
 }
 
+pub fn log_debug(message: &str) {
+    extern "C" {
+        fn __log_debug(pointer: u32, length: u32);
+    }
+    unsafe {
+        __log_debug(message.as_ptr() as u32, message.len() as u32);
+    }
+}
+
 #[doc(hidden)]
 impl Direction {
     pub fn rust_to_wasm(&self) -> u32 {
