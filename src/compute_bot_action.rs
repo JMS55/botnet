@@ -2,7 +2,6 @@ use crate::bot_actions::*;
 use crate::game::{Player, BOT_MEMORY_LIMIT, BOT_TIME_LIMIT, NETWORK_MEMORY_SIZE};
 use botnet_api::Bay;
 use std::error::Error;
-use std::thread;
 use wasmtime::{Engine, Linker, Store, StoreLimits, StoreLimitsBuilder};
 
 pub fn compute_bot_action(
@@ -23,7 +22,7 @@ pub fn compute_bot_action(
             bay,
         },
     );
-    store.set_epoch_deadline(1);
+    store.set_epoch_deadline(BOT_TIME_LIMIT);
     store.limiter(|data| &mut data.limits);
     let linker = setup_linker(engine)?;
     let instance = linker.instantiate(&mut store, &player.script)?;
@@ -59,13 +58,6 @@ pub fn compute_bot_action(
         network_memory_pointer as usize,
         &*network_memory,
     )?;
-
-    // Kill the bot instance if it takes longer than BOT_TIME_LIMIT
-    let engine = engine.clone();
-    thread::spawn(move || {
-        thread::sleep(BOT_TIME_LIMIT);
-        engine.increment_epoch();
-    });
 
     // Tick the bot instance to compute an action for the bot to take
     instance_tick.call(
