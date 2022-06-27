@@ -1,9 +1,11 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, ItemFn};
+use syn::{parse_macro_input, Ident, ItemFn};
 
 #[proc_macro_attribute]
-pub fn bot(_: TokenStream, wrapped_function: TokenStream) -> TokenStream {
+pub fn bot(network_memory_type: TokenStream, wrapped_function: TokenStream) -> TokenStream {
+    let network_memory_type = parse_macro_input!(network_memory_type as Ident);
+
     let wrapped_function = parse_macro_input!(wrapped_function as ItemFn);
     let wrapped_function_name = &wrapped_function.sig.ident;
 
@@ -29,7 +31,15 @@ pub fn bot(_: TokenStream, wrapped_function: TokenStream) -> TokenStream {
 
             let network_memory = ::std::slice::from_raw_parts_mut(network_memory_pointer, network_memory_size);
 
-            #wrapped_function_name(bot, bay, network_memory);
+            if network_memory[0] == 0 {
+                network_memory[0] = 1;
+                ::botnet_api::bincode::serialize_into(&mut network_memory[1..], &<#network_memory_type>::default()).unwrap();
+            }
+            let mut bot_network_memory: #network_memory_type = ::botnet_api::bincode::deserialize_from(&network_memory[1..]).unwrap();
+
+            #wrapped_function_name(bot, bay, &mut bot_network_memory);
+
+            ::botnet_api::bincode::serialize_into(&mut network_memory[1..], &mut bot_network_memory).unwrap();
         }
 
         #[no_mangle]

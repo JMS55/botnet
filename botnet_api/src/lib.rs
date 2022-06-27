@@ -7,6 +7,8 @@ use std::collections::HashMap;
 #[cfg(feature = "default")]
 pub use api::log_debug;
 #[cfg(feature = "default")]
+pub use bincode;
+#[cfg(feature = "default")]
 pub use botnet_api_derive::bot;
 #[cfg(feature = "default")]
 pub use rkyv;

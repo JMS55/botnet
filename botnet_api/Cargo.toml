@@ -4,8 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["dep:botnet_api_derive"]
+default = ["dep:botnet_api_derive", "dep:bincode"]
 
 [dependencies]
 botnet_api_derive = { version = "0.1", optional = true, path = "./botnet_api_derive" }
 rkyv = "0.7"
+bincode = { version = "1.3", optional = true }
