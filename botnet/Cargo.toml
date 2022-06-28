@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-botnet_api = { version = "0.1", default-features = false, path = "./botnet_api" }
+botnet_api = { version = "0.1", default-features = false, path = "../botnet_api" }
 wasmtime = "0.38"
 rkyv = "0.7"
 rayon = "1.5"
