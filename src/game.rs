@@ -9,8 +9,8 @@ use std::time::Duration;
 use wasmtime::{Config, Engine, Module};
 
 pub const NETWORK_MEMORY_SIZE: usize = 1_000_000; // 1mb
-pub const BOT_TIME_LIMIT: u64 = 1; // ~1ms, depending on scheduler behavior and when increment_epoch() is called
-pub const BOT_SETUP_TIME_LIMIT: u64 = 2; // ~2ms, depending on scheduler behavior and when increment_epoch() is called
+pub const BOT_TIME_LIMIT: u64 = 100; // ~1ms, depending on scheduler behavior and when increment_epoch() is called
+pub const BOT_SETUP_TIME_LIMIT: u64 = 25; // ~0.25ms, depending on scheduler behavior and when increment_epoch() is called
 pub const BOT_MEMORY_LIMIT: usize = 4_000_000; // 4mb
 
 pub struct Game {
@@ -44,7 +44,7 @@ impl Game {
             let engine = engine.clone();
             let stop_signal = Arc::clone(&epoch_increment_stop_signal);
             move || loop {
-                thread::sleep(Duration::from_millis(1));
+                thread::sleep(Duration::from_micros(10));
                 engine.increment_epoch();
                 if stop_signal.load(Ordering::SeqCst) {
                     return;
