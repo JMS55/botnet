@@ -5,7 +5,8 @@ use botnet_api::{Bay, Bot, Cell, Resource, BAY_SIZE};
 use dashmap::DashMap;
 use extension_traits::extension;
 use log::info;
-use rand::{thread_rng, Rng};
+use rand::rngs::StdRng;
+use rand::{Rng, SeedableRng};
 use std::collections::HashMap;
 use wasmtime::Engine;
 
@@ -35,7 +36,7 @@ impl Bay {
 
         cells[BAY_SIZE / 2][BAY_SIZE / 2] = Cell::Bot { id: 22 };
 
-        let mut rng = thread_rng();
+        let mut rng = StdRng::from_entropy();
         for _ in 0..100 {
             loop {
                 let (x, y): (usize, usize) =
@@ -57,7 +58,9 @@ impl Bay {
     }
 
     fn tick_bots(&mut self, players: &DashMap<u64, Player>, engine: &Engine) -> Vec<u64> {
-        let bot_ids_to_tick = self.bots.keys().copied().collect::<Vec<_>>();
+        let mut bot_ids_to_tick = self.bots.keys().copied().collect::<Vec<_>>();
+        bot_ids_to_tick.sort();
+
         for bot_id in &bot_ids_to_tick {
             if let Some(bot) = self.bots.get(&bot_id) {
                 let player = &players.get(&bot.player_id).unwrap();
@@ -72,6 +75,7 @@ impl Bay {
                 }
             }
         }
+
         bot_ids_to_tick
     }
 
