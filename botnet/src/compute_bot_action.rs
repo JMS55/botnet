@@ -103,39 +103,7 @@ fn setup_linker(engine: &Engine) -> Result<Linker<StoreData>, Box<dyn Error>> {
 
     export_move_towards(&mut linker)?;
     export_harvest_resource(&mut linker)?;
-
-    #[cfg(debug_assertions)]
     export_log_debug(&mut linker)?;
 
     Ok(linker)
-}
-
-#[cfg(debug_assertions)]
-pub fn export_log_debug(linker: &mut Linker<StoreData>) -> Result<(), Box<dyn Error>> {
-    use log::debug;
-    use wasmtime::{Caller, Extern};
-
-    linker.func_wrap(
-        "env",
-        "__log_debug",
-        |mut caller: Caller<StoreData>, pointer: u32, length: u32| {
-            let mut message_bytes = vec![0; length as usize];
-            caller
-                .get_export("memory")
-                .map(Extern::into_memory)
-                .flatten()
-                .map(|memory| memory.read(&mut caller, pointer as usize, &mut message_bytes))
-                .map(Result::ok)
-                .expect("Failed to read debug message from bot memory");
-            let message = String::from_utf8(message_bytes)
-                .expect("Failed to read valid debug message from bot");
-
-            debug!(
-                "Bot[{}] logged message: \"{}\"",
-                caller.data().bot_id,
-                message
-            );
-        },
-    )?;
-    Ok(())
 }
