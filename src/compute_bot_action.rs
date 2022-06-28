@@ -1,5 +1,7 @@
 use crate::bot_actions::*;
-use crate::game::{Player, BOT_MEMORY_LIMIT, BOT_TIME_LIMIT, NETWORK_MEMORY_SIZE};
+use crate::game::{
+    Player, BOT_MEMORY_LIMIT, BOT_SETUP_TIME_LIMIT, BOT_TIME_LIMIT, NETWORK_MEMORY_SIZE,
+};
 use botnet_api::Bay;
 use std::error::Error;
 use wasmtime::{Engine, Linker, Store, StoreLimits, StoreLimitsBuilder};
@@ -33,6 +35,9 @@ pub fn compute_bot_action(
     let instance_memory = instance
         .get_memory(&mut store, "memory")
         .ok_or("No memory exported for bot instance")?;
+
+    // Set time limit for setting up bay data and network memory
+    store.set_epoch_deadline(BOT_SETUP_TIME_LIMIT);
 
     // Serialize and copy bay to the bot instance
     let bay = rkyv::to_bytes::<_, 25_000>(bay)?;
