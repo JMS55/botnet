@@ -25,7 +25,7 @@ impl WasmEngine {
 
                 engine.increment_epoch();
 
-                if stop_signal.load(Ordering::SeqCst) {
+                if stop_signal.load(Ordering::Relaxed) {
                     return;
                 }
             }
@@ -41,6 +41,6 @@ impl WasmEngine {
 impl Drop for WasmEngine {
     fn drop(&mut self) {
         self.epoch_increment_stop_signal
-            .store(true, Ordering::SeqCst);
+            .store(true, Ordering::Relaxed);
     }
 }
