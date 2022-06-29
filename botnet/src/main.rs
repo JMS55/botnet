@@ -1,9 +1,11 @@
 mod bay;
 mod bot_actions;
 mod compute_bot_action;
+mod config;
 mod game;
+mod wasm_engine;
 
-use game::Game;
+use crate::game::Game;
 use std::thread;
 
 fn main() {

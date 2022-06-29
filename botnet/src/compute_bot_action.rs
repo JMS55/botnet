@@ -1,7 +1,6 @@
 use crate::bot_actions::*;
-use crate::game::{
-    Player, BOT_MEMORY_LIMIT, BOT_SETUP_TIME_LIMIT, BOT_TIME_LIMIT, NETWORK_MEMORY_SIZE,
-};
+use crate::config::{BOT_MEMORY_LIMIT, BOT_SETUP_TIME_LIMIT, BOT_TIME_LIMIT, NETWORK_MEMORY_SIZE};
+use crate::game::Player;
 use botnet_api::Bay;
 use std::error::Error;
 use wasmtime::{Engine, Linker, Store, StoreLimits, StoreLimitsBuilder};
