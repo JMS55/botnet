@@ -7,6 +7,9 @@ use rayon::iter::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelI
 use std::sync::{Arc, Mutex};
 use wasmtime::Module;
 
+/// High level object for managing an instance of the game server.
+///
+/// Holds player data, and bay data.
 pub struct Game {
     players: Arc<DashMap<u64, Player>>,
     bays: Vec<Bay>,
@@ -44,6 +47,7 @@ impl Game {
         }
     }
 
+    /// Ticks each bay in the game in parallel.
     pub fn tick(&mut self) {
         self.bays
             .par_iter_mut()

@@ -2,6 +2,7 @@ use crate::{ArchivedBay, ArchivedBot, ArchivedCell, Cell, BAY_SIZE};
 use std::collections::{HashMap, VecDeque};
 
 impl ArchivedBot {
+    /// Find a path to the nearest cell that satisfies a goal function.
     pub fn find_path_to<F>(&self, goal_function: F, bay: &ArchivedBay) -> Option<Vec<(u32, u32)>>
     where
         F: Fn(&ArchivedCell, u32, u32) -> bool,
@@ -57,6 +58,7 @@ impl ArchivedBot {
     }
 }
 
+/// Goal function for finding any resource.
 pub const RESOURCE: fn(&ArchivedCell, u32, u32) -> bool = is_resource;
 fn is_resource(cell: &ArchivedCell, _x: u32, _y: u32) -> bool {
     match cell {

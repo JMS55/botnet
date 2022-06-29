@@ -9,6 +9,7 @@ use rand::{thread_rng, Rng};
 use std::collections::HashMap;
 use wasmtime::Engine;
 
+/// Methods for creating and updating a [`botnet_api::Bay`].
 #[extension(pub trait BayExt)]
 impl Bay {
     fn new() -> Self {
@@ -52,18 +53,22 @@ impl Bay {
 
     fn tick(&mut self, bay_id: usize, players: &DashMap<u64, Player>, engine: &Engine) {
         info!("Bay[{bay_id}] starting tick");
+
         let bots_ticked = self.tick_bots(players, engine);
         self.recharge_bots(&bots_ticked);
     }
 
     fn tick_bots(&mut self, players: &DashMap<u64, Player>, engine: &Engine) -> Vec<u64> {
         let bot_ids_to_tick = self.bots.keys().copied().collect::<Vec<_>>();
+
         for bot_id in &bot_ids_to_tick {
             if let Some(bot) = self.bots.get(&bot_id) {
                 let player = &players.get(&bot.player_id).unwrap();
+
                 match compute_bot_action(*bot_id, engine, &self, player) {
                     Ok(bot_action) => {
                         info!("Bot[{bot_id}] chose action {:?}", bot_action);
+
                         self.apply_bot_action(*bot_id, bot_action);
                     }
                     result => {
@@ -72,6 +77,7 @@ impl Bay {
                 }
             }
         }
+
         bot_ids_to_tick
     }
 

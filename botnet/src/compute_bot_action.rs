@@ -5,6 +5,7 @@ use botnet_api::Bay;
 use std::error::Error;
 use wasmtime::{Engine, Linker, Store, StoreLimits, StoreLimitsBuilder};
 
+/// Runs the player's wasm script to decide on an action for one of their bots.
 pub fn compute_bot_action(
     bot_id: u64,
     engine: &Engine,

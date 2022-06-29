@@ -2,6 +2,7 @@ use crate::compute_bot_action::StoreData;
 use std::error::Error;
 use wasmtime::{Caller, Linker};
 
+/// Allows bot scripts to log debug messages when the server is compiled with the debug profile.
 pub fn export_log_debug(linker: &mut Linker<StoreData>) -> Result<(), Box<dyn Error>> {
     #[cfg(debug_assertions)]
     let log_debug = |mut caller: Caller<StoreData>, pointer: u32, length: u32| {
@@ -26,6 +27,7 @@ pub fn export_log_debug(linker: &mut Linker<StoreData>) -> Result<(), Box<dyn Er
         );
     };
 
+    // Stub out log_debug when compiling for release
     #[cfg(not(debug_assertions))]
     let log_debug = |_: Caller<StoreData>, _: u32, _: u32| {};
 
