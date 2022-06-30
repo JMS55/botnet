@@ -1,5 +1,5 @@
 use super::BotAction;
-use crate::compute_bot_action::StoreData;
+use crate::wasm_context::StoreData;
 use botnet_api::{ActionError, Bay, Bot, Cell, BAY_SIZE};
 use std::error::Error;
 use wasmtime::{Caller, Linker};

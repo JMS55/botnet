@@ -1,20 +1,21 @@
-use crate::bot_actions::*;
+use crate::bot_actions::BotAction;
 use crate::config::{BOT_MEMORY_LIMIT, BOT_SETUP_TIME_LIMIT, BOT_TIME_LIMIT, NETWORK_MEMORY_SIZE};
 use crate::game::Player;
+use crate::wasm_context::{StoreData, WasmContext};
 use botnet_api::Bay;
 use std::error::Error;
-use wasmtime::{Engine, Linker, Store, StoreLimits, StoreLimitsBuilder};
+use wasmtime::{Store, StoreLimitsBuilder};
 
 /// Runs the player's wasm script to decide on an action for one of their bots.
 pub fn compute_bot_action(
     bot_id: u64,
-    engine: &Engine,
     bay: &Bay,
     player: &Player,
+    wasm_context: &WasmContext,
 ) -> Result<BotAction, Box<dyn Error>> {
     // Setup an instance of the bot script
     let mut store = Store::new(
-        engine,
+        &wasm_context.engine,
         StoreData {
             limits: StoreLimitsBuilder::new()
                 .memory_size(BOT_MEMORY_LIMIT)
@@ -25,8 +26,9 @@ pub fn compute_bot_action(
         },
     );
     store.limiter(|data| &mut data.limits);
-    let linker = setup_linker(engine)?;
-    let instance = linker.instantiate(&mut store, &player.script)?;
+    let instance = wasm_context
+        .linker
+        .instantiate(&mut store, &player.script)?;
 
     // Get bot script exports
     let instance_tick =
@@ -89,21 +91,4 @@ pub fn compute_bot_action(
         .data()
         .bot_action
         .ok_or_else(|| "Bot script did not set an action".into())
-}
-
-pub struct StoreData<'a> {
-    limits: StoreLimits,
-    pub bot_action: Option<BotAction>,
-    pub bot_id: u64,
-    pub bay: &'a Bay,
-}
-
-fn setup_linker(engine: &Engine) -> Result<Linker<StoreData>, Box<dyn Error>> {
-    let mut linker = Linker::new(engine);
-
-    export_move_towards(&mut linker)?;
-    export_harvest_resource(&mut linker)?;
-    export_log_debug(&mut linker)?;
-
-    Ok(linker)
 }

@@ -1,4 +1,4 @@
-use crate::compute_bot_action::StoreData;
+use crate::wasm_context::StoreData;
 use std::error::Error;
 use wasmtime::{Caller, Linker};
 

@@ -1,19 +1,21 @@
 use crate::bay::BayExt;
 use crate::config::NETWORK_MEMORY_SIZE;
-use crate::wasm_engine::WasmEngine;
+use crate::wasm_context::WasmContext;
 use botnet_api::Bay;
-use dashmap::DashMap;
+use log::info;
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
+use std::collections::HashMap;
+use std::error::Error;
 use std::sync::{Arc, Mutex};
 use wasmtime::Module;
 
 /// High level object for managing an instance of the game server.
 ///
 /// Holds player data, and bay data.
-pub struct Game {
-    players: Arc<DashMap<u64, Player>>,
+pub struct Game<'a> {
+    players: HashMap<u64, Player>,
     bays: Vec<Bay>,
-    wasm_engine: WasmEngine,
+    wasm_engine: WasmContext<'a>,
 }
 
 pub struct Player {
@@ -21,11 +23,11 @@ pub struct Player {
     pub script: Module,
 }
 
-impl Game {
-    pub fn new() -> Self {
-        let wasm_engine = WasmEngine::new();
+impl Game<'_> {
+    pub fn new() -> Result<Self, Box<dyn Error>> {
+        let wasm_engine = WasmContext::new()?;
 
-        let players = DashMap::new();
+        let mut players = HashMap::new();
         players.insert(
             1717,
             Player {
@@ -40,21 +42,25 @@ impl Game {
             },
         );
 
-        Self {
-            players: Arc::new(players),
-            bays: vec![Bay::new()],
+        let bays = vec![Bay::new()];
+
+        Ok(Self {
+            players,
+            bays,
             wasm_engine,
-        }
+        })
     }
 
-    /// Ticks each bay in the game in parallel.
+    /// Update the game.
     pub fn tick(&mut self) {
+        // Tick each bay in parallel
         self.bays
             .par_iter_mut()
             .enumerate()
             .for_each(|(bay_id, bay)| {
-                let players = self.players.clone();
-                bay.tick(bay_id, &*players, &self.wasm_engine.engine);
+                info!("Bay[{bay_id}] starting tick");
+
+                bay.tick(&self.players, &self.wasm_engine);
             });
     }
 }

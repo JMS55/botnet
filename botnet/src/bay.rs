@@ -1,13 +1,12 @@
 use crate::bot_actions::*;
 use crate::compute_bot_action::compute_bot_action;
 use crate::game::Player;
+use crate::wasm_context::WasmContext;
 use botnet_api::{Bay, Bot, Cell, Resource, BAY_SIZE};
-use dashmap::DashMap;
 use extension_traits::extension;
 use log::info;
 use rand::{thread_rng, Rng};
 use std::collections::HashMap;
-use wasmtime::Engine;
 
 /// Methods for creating and updating a [`botnet_api::Bay`].
 #[extension(pub trait BayExt)]
@@ -51,21 +50,25 @@ impl Bay {
         Self { bots, cells }
     }
 
-    fn tick(&mut self, bay_id: usize, players: &DashMap<u64, Player>, engine: &Engine) {
-        info!("Bay[{bay_id}] starting tick");
-
-        let bots_ticked = self.tick_bots(players, engine);
+    /// Update the bay.
+    fn tick(&mut self, players: &HashMap<u64, Player>, wasm_context: &WasmContext) {
+        let bots_ticked = self.tick_bots(players, wasm_context);
         self.recharge_bots(&bots_ticked);
     }
 
-    fn tick_bots(&mut self, players: &DashMap<u64, Player>, engine: &Engine) -> Vec<u64> {
+    /// Compute and apply an action for each bot.
+    fn tick_bots(
+        &mut self,
+        players: &HashMap<u64, Player>,
+        wasm_context: &WasmContext,
+    ) -> Vec<u64> {
         let bot_ids_to_tick = self.bots.keys().copied().collect::<Vec<_>>();
 
         for bot_id in &bot_ids_to_tick {
             if let Some(bot) = self.bots.get(&bot_id) {
                 let player = &players.get(&bot.player_id).unwrap();
 
-                match compute_bot_action(*bot_id, engine, &self, player) {
+                match compute_bot_action(*bot_id, &self, player, wasm_context) {
                     Ok(bot_action) => {
                         info!("Bot[{bot_id}] chose action {:?}", bot_action);
 
@@ -81,6 +84,7 @@ impl Bay {
         bot_ids_to_tick
     }
 
+    /// Add some energy back to each bot.
     fn recharge_bots(&mut self, bot_ids: &[u64]) {
         for bot_id in bot_ids {
             if let Some(bot) = self.bots.get_mut(bot_id) {
