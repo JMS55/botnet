@@ -1,2 +1,3 @@
 **/target
-botnet_api/**/Cargo.lock
+botnet_api/Cargo.lock
+botnet_api_derive/Cargo.lock
