@@ -1,15 +1,13 @@
 [package]
-name = "botnet"
+name = "botnet_replay_viewer"
 version = "0.1.0"
 edition = "2021"
 
+[profile.release]
+lto = true
+
 [dependencies]
+botnet = { version = "0.1", path = "../botnet" }
 botnet_api = { version = "0.1", default-features = false, path = "../botnet_api" }
-wasmtime = "0.38"
+macroquad = "0.3"
 rkyv = "0.7"
-rayon = "1.5"
-crossbeam-channel = "0.5"
-rand = "0.8"
-log = "0.4"
-env_logger = "0.9"
-extension-traits = "1.0"

@@ -15,7 +15,7 @@ pub use rkyv;
 
 pub const BAY_SIZE: usize = 32;
 
-#[derive(Archive, Serialize, Deserialize)]
+#[derive(Archive, Serialize, Deserialize, Clone)]
 pub struct Bay {
     pub bots: HashMap<u64, Bot>,
     pub cells: [[Cell; BAY_SIZE]; BAY_SIZE],
@@ -52,7 +52,8 @@ pub enum Resource {
     Plastic,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Archive, Serialize, Deserialize, Clone, Copy, Debug)]
+#[archive_attr(derive(Debug))]
 pub enum Direction {
     Up,
     Down,

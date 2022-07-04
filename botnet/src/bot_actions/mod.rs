@@ -7,8 +7,10 @@ pub use log_debug::*;
 pub use move_towards::*;
 
 use botnet_api::Direction;
+use rkyv::{Archive, Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Archive, Serialize, Deserialize, Clone, Copy, Debug)]
+#[archive_attr(derive(Debug))]
 pub enum BotAction {
     MoveTowards(Direction),
     HarvestResource { x: u32, y: u32 },

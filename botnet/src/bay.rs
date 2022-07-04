@@ -1,6 +1,7 @@
 use crate::bot_actions::*;
 use crate::compute_bot_action::compute_bot_action;
 use crate::game::Player;
+use crate::replay::ReplayRecorder;
 use crate::wasm_context::WasmContext;
 use botnet_api::{Bay, Bot, Cell, Resource, BAY_SIZE};
 use extension_traits::extension;
@@ -51,20 +52,30 @@ impl Bay {
     }
 
     /// Update the bay.
-    fn tick(&mut self, players: &HashMap<u64, Player>, wasm_context: &WasmContext) {
-        let bots_ticked = self.tick_bots(players, wasm_context);
-        self.recharge_bots(&bots_ticked);
+    fn tick(
+        &mut self,
+        bay_id: u64,
+        players: &HashMap<u64, Player>,
+        wasm_context: &WasmContext,
+        replay_recorder: Option<&ReplayRecorder>,
+    ) {
+        info!("Bay[{bay_id}] starting tick");
+        let bot_ids = self.bots.keys().copied().collect::<Vec<_>>();
+
+        self.tick_bots(bay_id, &bot_ids, players, wasm_context, replay_recorder);
+        self.recharge_bots(bay_id, &bot_ids, replay_recorder);
     }
 
     /// Compute and apply an action for each bot.
     fn tick_bots(
         &mut self,
+        bay_id: u64,
+        bot_ids: &[u64],
         players: &HashMap<u64, Player>,
         wasm_context: &WasmContext,
-    ) -> Vec<u64> {
-        let bot_ids_to_tick = self.bots.keys().copied().collect::<Vec<_>>();
-
-        for bot_id in &bot_ids_to_tick {
+        replay_recorder: Option<&ReplayRecorder>,
+    ) {
+        for bot_id in bot_ids {
             if let Some(bot) = self.bots.get(&bot_id) {
                 let player = &players.get(&bot.player_id).unwrap();
 
@@ -72,7 +83,7 @@ impl Bay {
                     Ok(bot_action) => {
                         info!("Bot[{bot_id}] chose action {:?}", bot_action);
 
-                        self.apply_bot_action(*bot_id, bot_action);
+                        self.apply_bot_action(bay_id, *bot_id, bot_action, replay_recorder);
                     }
                     result => {
                         info!("Bot[{bot_id}] did not choose an action: {:?}", result);
@@ -80,23 +91,40 @@ impl Bay {
                 }
             }
         }
-
-        bot_ids_to_tick
     }
 
     /// Add some energy back to each bot.
-    fn recharge_bots(&mut self, bot_ids: &[u64]) {
+    fn recharge_bots(
+        &mut self,
+        bay_id: u64,
+        bot_ids: &[u64],
+        replay_recorder: Option<&ReplayRecorder>,
+    ) {
         for bot_id in bot_ids {
             if let Some(bot) = self.bots.get_mut(bot_id) {
                 bot.energy += 5;
             }
         }
+
+        if let Some(replay_recorder) = replay_recorder {
+            replay_recorder.record_recharge_bots(bay_id, bot_ids);
+        }
     }
 
-    fn apply_bot_action(&mut self, bot_id: u64, bot_action: BotAction) {
+    fn apply_bot_action(
+        &mut self,
+        bay_id: u64,
+        bot_id: u64,
+        bot_action: BotAction,
+        replay_recorder: Option<&ReplayRecorder>,
+    ) {
         match bot_action {
             BotAction::MoveTowards(direction) => apply_bot_move_towards(self, bot_id, direction),
             BotAction::HarvestResource { x, y } => apply_bot_harvest_resource(self, bot_id, x, y),
+        }
+
+        if let Some(replay_recorder) = replay_recorder {
+            replay_recorder.record_bot_action(bay_id, bot_id, bot_action);
         }
     }
 }

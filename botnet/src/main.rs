@@ -1,19 +1,17 @@
-mod bay;
-mod bot_actions;
-mod compute_bot_action;
-mod config;
-mod game;
-mod wasm_context;
-
-use crate::game::Game;
+use botnet::game::Game;
 use std::thread;
+use std::time::{Duration, Instant};
 
 fn main() {
     env_logger::init();
 
-    let mut game = Game::new().unwrap();
+    let mut game = Game::new(true).unwrap();
+    let t = Instant::now();
     loop {
         game.tick();
+        if t.elapsed() > Duration::from_secs(1) {
+            return;
+        }
         thread::yield_now();
     }
 }
