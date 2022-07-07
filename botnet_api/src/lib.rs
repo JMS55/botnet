@@ -1,4 +1,5 @@
 mod api;
+mod entity_helpers;
 pub mod pathfinding;
 
 use rkyv::{Archive, Deserialize, Serialize};
@@ -17,25 +18,25 @@ pub const BAY_SIZE: usize = 24;
 
 #[derive(Archive, Serialize, Deserialize, Clone)]
 pub struct Bay {
-    pub bots: HashMap<u64, Bot>,
-    pub cells: [[Cell; BAY_SIZE]; BAY_SIZE],
+    pub entities: HashMap<EntityID, Entity>,
+    pub cells: [[Option<EntityID>; BAY_SIZE]; BAY_SIZE],
 }
 
-#[derive(Archive, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
-#[archive(compare(PartialEq))]
-pub enum Cell {
-    Empty,
+pub type EntityID = u64;
+
+#[derive(Archive, Serialize, Deserialize, Clone)]
+pub enum Entity {
     Wall,
+    Bot(Bot),
     Resource(Resource),
-    Interconnect { next_bay_id: u64 },
-    Antenna { controller_id: u64 },
-    Bot { id: u64 },
+    Interconnect { next_bay_id: EntityID },
+    Antenna { controller_id: EntityID },
 }
 
 #[derive(Archive, Serialize, Deserialize, Clone)]
 pub struct Bot {
-    pub id: u64,
-    pub player_id: u64,
+    pub entity_id: EntityID,
+    pub player_id: EntityID,
     pub energy: u32,
     pub held_resource: Option<Resource>,
     pub x: usize,

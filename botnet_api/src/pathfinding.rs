@@ -1,11 +1,11 @@
-use crate::{ArchivedBay, ArchivedBot, ArchivedCell, Cell, BAY_SIZE};
+use crate::{ArchivedBay, ArchivedBot, ArchivedEntity, BAY_SIZE};
 use std::collections::{HashMap, VecDeque};
 
 impl ArchivedBot {
     /// Find a path to the nearest cell that satisfies a goal function.
     pub fn find_path_to<F>(&self, goal_function: F, bay: &ArchivedBay) -> Option<Vec<(u32, u32)>>
     where
-        F: Fn(&ArchivedCell, u32, u32) -> bool,
+        F: Fn(u32, u32, &ArchivedBay) -> bool,
     {
         let mut frontier = VecDeque::new();
         let mut came_from: HashMap<(u32, u32), (u32, u32)> = HashMap::new();
@@ -17,11 +17,7 @@ impl ArchivedBot {
         let mut neighbors_goal = |(x, y)| {
             for neighbor in neighbors(x, y) {
                 if let Some((neighbor_x, neighbor_y)) = neighbor {
-                    if (goal_function)(
-                        &bay.cells[neighbor_x as usize][neighbor_y as usize],
-                        neighbor_x,
-                        neighbor_y,
-                    ) {
+                    if (goal_function)(neighbor_x, neighbor_y, bay) {
                         real_goal = (neighbor_x, neighbor_y);
                         return true;
                     }
@@ -59,28 +55,27 @@ impl ArchivedBot {
 }
 
 /// Goal function for finding any resource.
-pub const RESOURCE: fn(&ArchivedCell, u32, u32) -> bool = is_resource;
-fn is_resource(cell: &ArchivedCell, _x: u32, _y: u32) -> bool {
-    match cell {
-        ArchivedCell::Resource(_) => true,
-        _ => false,
-    }
+pub const RESOURCE: fn(u32, u32, &ArchivedBay) -> bool = resource_exists_at_position;
+fn resource_exists_at_position(x: u32, y: u32, bay: &ArchivedBay) -> bool {
+    bay.get_entity_at_position(x, y)
+        .map(ArchivedEntity::is_resource)
+        .unwrap_or(false)
 }
 
 fn empty_neighbors((x, y): (u32, u32), bay: &ArchivedBay) -> [Option<(u32, u32)>; 4] {
     [
         (y != 0)
             .then(|| (x, y - 1))
-            .filter(|(x, y)| bay.cells[*x as usize][*y as usize] == Cell::Empty),
+            .filter(|(x, y)| bay.cells[*x as usize][*y as usize].is_none()),
         (y as usize != BAY_SIZE - 1)
             .then(|| (x, y + 1))
-            .filter(|(x, y)| bay.cells[*x as usize][*y as usize] == Cell::Empty),
+            .filter(|(x, y)| bay.cells[*x as usize][*y as usize].is_none()),
         (x != 0)
             .then(|| (x - 1, y))
-            .filter(|(x, y)| bay.cells[*x as usize][*y as usize] == Cell::Empty),
+            .filter(|(x, y)| bay.cells[*x as usize][*y as usize].is_none()),
         (x as usize != BAY_SIZE - 1)
             .then(|| (x + 1, y))
-            .filter(|(x, y)| bay.cells[*x as usize][*y as usize] == Cell::Empty),
+            .filter(|(x, y)| bay.cells[*x as usize][*y as usize].is_none()),
     ]
 }
 

@@ -1,6 +1,6 @@
 use crate::bot_actions::BotAction;
 use crate::config::RECORDING_QUEUE_MESSAGE_LIMIT;
-use botnet_api::Bay;
+use botnet_api::{Bay, EntityID};
 use crossbeam_channel::{bounded as bounded_channel, RecvError, Sender};
 use rkyv::{Archive, Deserialize, Serialize};
 use std::fs::File;
@@ -18,23 +18,23 @@ pub struct ReplayRecorder {
 pub enum ReplayRecord {
     GameVersion(Box<str>),
     InitialBayState {
-        bay_id: u64,
+        bay_id: EntityID,
         bay: Box<Bay>,
     },
     TickStart,
     BotAction {
-        bay_id: u64,
-        bot_id: u64,
+        bay_id: EntityID,
+        bot_id: EntityID,
         bot_action: BotAction,
     },
     RechargeBots {
-        bay_id: u64,
-        bot_ids: Box<[u64]>,
+        bay_id: EntityID,
+        bot_ids: Box<[EntityID]>,
     },
 }
 
 impl ReplayRecorder {
-    pub fn new(initial_bays: &[(u64, &Bay)]) -> Self {
+    pub fn new(initial_bays: &[(EntityID, &Bay)]) -> Self {
         let (recording_sender, record_receiver) = bounded_channel(RECORDING_QUEUE_MESSAGE_LIMIT);
 
         // Start a background thread to take care of writing ReplayRecords to a file
@@ -76,7 +76,7 @@ impl ReplayRecorder {
             .unwrap();
     }
 
-    fn record_initial_bay_states(&self, bays: &[(u64, &Bay)]) {
+    fn record_initial_bay_states(&self, bays: &[(EntityID, &Bay)]) {
         for (bay_id, bay) in bays {
             self.record_sender
                 .send(ReplayRecord::InitialBayState {
@@ -91,7 +91,7 @@ impl ReplayRecorder {
         self.record_sender.send(ReplayRecord::TickStart).unwrap();
     }
 
-    pub fn record_bot_action(&self, bay_id: u64, bot_id: u64, bot_action: BotAction) {
+    pub fn record_bot_action(&self, bay_id: EntityID, bot_id: EntityID, bot_action: BotAction) {
         self.record_sender
             .send(ReplayRecord::BotAction {
                 bay_id,
@@ -101,7 +101,7 @@ impl ReplayRecorder {
             .unwrap();
     }
 
-    pub fn record_recharge_bots(&self, bay_id: u64, bot_ids: &[u64]) {
+    pub fn record_recharge_bots(&self, bay_id: EntityID, bot_ids: &[EntityID]) {
         self.record_sender
             .send(ReplayRecord::RechargeBots {
                 bay_id,

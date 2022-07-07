@@ -2,20 +2,20 @@ use crate::bay::BayExt;
 use crate::config::NETWORK_MEMORY_SIZE;
 use crate::replay::ReplayRecorder;
 use crate::wasm_context::WasmContext;
-use botnet_api::Bay;
+use botnet_api::{Bay, EntityID};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
 use std::collections::HashMap;
 use std::error::Error;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use wasmtime::Module;
 
 /// High level object for managing an instance of the game server.
-///
-/// Holds player data, and bay data.
 pub struct Game<'a> {
-    players: HashMap<u64, Player>,
+    players: HashMap<EntityID, Player>,
     bays: Vec<Bay>,
     wasm_engine: WasmContext<'a>,
+    next_entity_id: Arc<AtomicU64>,
     replay_recorder: Option<ReplayRecorder>,
 }
 
@@ -28,9 +28,12 @@ impl Game<'_> {
     pub fn new(record_replay: bool) -> Result<Self, Box<dyn Error>> {
         let wasm_engine = WasmContext::new()?;
 
+        let next_entity_id = Arc::new(AtomicU64::new(0));
+
         let mut players = HashMap::new();
+        let test_player_id = next_entity_id.fetch_add(1, Ordering::SeqCst);
         players.insert(
-            1717,
+            test_player_id,
             Player {
                 network_memory: Arc::new(Mutex::new([0; NETWORK_MEMORY_SIZE])),
                 script: Module::new(
@@ -43,14 +46,14 @@ impl Game<'_> {
             },
         );
 
-        let bays = vec![Bay::new()];
+        let bays = vec![Bay::new(Arc::clone(&next_entity_id), test_player_id)];
 
         let replay_recorder = record_replay.then(|| {
             ReplayRecorder::new(
                 &bays
                     .iter()
                     .enumerate()
-                    .map(|(id, bay)| (id as u64, bay))
+                    .map(|(entity_id, bay)| (entity_id as EntityID, bay))
                     .collect::<Vec<_>>(),
             )
         });
@@ -59,6 +62,7 @@ impl Game<'_> {
             players,
             bays,
             wasm_engine,
+            next_entity_id,
             replay_recorder,
         })
     }
@@ -76,7 +80,7 @@ impl Game<'_> {
             .enumerate()
             .for_each(|(bay_id, bay)| {
                 bay.tick(
-                    bay_id as u64,
+                    bay_id as EntityID,
                     &self.players,
                     &self.wasm_engine,
                     self.replay_recorder.as_ref(),

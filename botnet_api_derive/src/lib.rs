@@ -20,7 +20,7 @@ pub fn bot(network_memory_type: TokenStream, wrapped_function: TokenStream) -> T
         /// Entry point for a bot tick that wraps neccesary setup work.
         #[no_mangle]
         pub unsafe extern "C" fn __tick(
-            bot_id: u64,
+            bot_id: ::botnet_api::EntityID,
             bay_pointer: *const u8,
             bay_size: usize,
             network_memory_pointer: *mut u8,
@@ -30,7 +30,8 @@ pub fn bot(network_memory_type: TokenStream, wrapped_function: TokenStream) -> T
             let bay_data = ::std::slice::from_raw_parts(bay_pointer, bay_size);
             let bay = ::botnet_api::rkyv::archived_root::<::botnet_api::Bay>(bay_data);
 
-            let bot = bay.bots.get(&bot_id).unwrap();
+            // Pull the bot out of the bay's entity map
+            let bot = bay.get_bot(bot_id).unwrap();
 
             // Reconstuct the raw network memory data
             let network_memory = ::std::slice::from_raw_parts_mut(network_memory_pointer, network_memory_size);

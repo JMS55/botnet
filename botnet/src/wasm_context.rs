@@ -1,5 +1,5 @@
 use crate::bot_actions::*;
-use botnet_api::Bay;
+use botnet_api::{Bay, EntityID};
 use std::error::Error;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -16,7 +16,7 @@ pub struct WasmContext<'a> {
 pub struct StoreData<'a> {
     pub limits: StoreLimits,
     pub bot_action: Option<BotAction>,
-    pub bot_id: u64,
+    pub bot_id: EntityID,
     pub bay: &'a Bay,
 }
 

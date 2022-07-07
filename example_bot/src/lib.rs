@@ -4,12 +4,12 @@ use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Default)]
 struct NetworkMemory {
-    bot_paths: HashMap<u64, Option<Vec<(u32, u32)>>>,
+    bot_paths: HashMap<EntityID, Option<Vec<(u32, u32)>>>,
 }
 
 #[bot(NetworkMemory)]
 fn tick(bot: &ArchivedBot, bay: &ArchivedBay, network_memory: &mut NetworkMemory) {
-    let bot_path = network_memory.bot_paths.entry(bot.id).or_default();
+    let bot_path = network_memory.bot_paths.entry(bot.entity_id).or_default();
 
     if *bot_path == None {
         *bot_path = bot.find_path_to(RESOURCE, bay);

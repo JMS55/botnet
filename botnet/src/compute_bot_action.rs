@@ -2,13 +2,13 @@ use crate::bot_actions::BotAction;
 use crate::config::{BOT_MEMORY_LIMIT, BOT_SETUP_TIME_LIMIT, BOT_TIME_LIMIT, NETWORK_MEMORY_SIZE};
 use crate::game::Player;
 use crate::wasm_context::{StoreData, WasmContext};
-use botnet_api::Bay;
+use botnet_api::{Bay, EntityID};
 use std::error::Error;
 use wasmtime::{Store, StoreLimitsBuilder};
 
 /// Runs the player's wasm script to decide on an action for one of their bots.
 pub fn compute_bot_action(
-    bot_id: u64,
+    bot_id: EntityID,
     bay: &Bay,
     player: &Player,
     wasm_context: &WasmContext,
@@ -32,7 +32,7 @@ pub fn compute_bot_action(
 
     // Get bot script exports
     let instance_tick =
-        instance.get_typed_func::<(u64, u32, u32, u32, u32), (), _>(&mut store, "__tick")?;
+        instance.get_typed_func::<(EntityID, u32, u32, u32, u32), (), _>(&mut store, "__tick")?;
     let instance_memalloc = instance.get_typed_func::<u32, u32, _>(&mut store, "__memalloc")?;
     let instance_memory = instance
         .get_memory(&mut store, "memory")

@@ -1,6 +1,6 @@
 use crate::bot_actions::BotAction;
 use crate::wasm_context::StoreData;
-use botnet_api::{ActionError, Bay, Bot, Cell, BAY_SIZE};
+use botnet_api::{ActionError, Bay, Bot, Entity, EntityID};
 use std::error::Error;
 use wasmtime::{Caller, Linker};
 
@@ -17,16 +17,13 @@ fn bot_can_harvest_resource(bot: &Bot, x: u32, y: u32, bay: &Bay) -> Result<(), 
         return Err(ActionError::ActionNotPossible);
     }
 
-    // Check if coordinates to harvest exist
-    let (x, y) = (x as usize, y as usize);
-    if x >= BAY_SIZE || y >= BAY_SIZE {
+    // Check if there is a resource at the given coordinates
+    if !bay
+        .get_entity_at_position(x, y)
+        .map(Entity::is_resource)
+        .unwrap_or(false)
+    {
         return Err(ActionError::ActionNotPossible);
-    }
-
-    // Check if there is a resource at the coordinates
-    match bay.cells[x][y] {
-        Cell::Resource(_) => {}
-        _ => return Err(ActionError::ActionNotPossible),
     }
 
     // Check if the coordinates are adjacent to the bot
@@ -41,17 +38,17 @@ fn bot_can_harvest_resource(bot: &Bot, x: u32, y: u32, bay: &Bay) -> Result<(), 
     Ok(())
 }
 
-pub fn apply_bot_harvest_resource(bay: &mut Bay, bot_id: u64, x: u32, y: u32) {
-    let bot = bay.bots.get_mut(&bot_id).unwrap();
+pub fn apply_bot_harvest_resource(bay: &mut Bay, bot_id: EntityID, x: u32, y: u32) {
+    let resource = *bay
+        .get_entity_at_position(x, y)
+        .unwrap()
+        .unwrap_as_resource();
+    bay.entities
+        .remove(&bay.cells[x as usize][y as usize].unwrap());
+    bay.cells[x as usize][y as usize] = None;
 
-    let resource = match bay.cells[x as usize][y as usize] {
-        botnet_api::Cell::Resource(resource) => resource,
-        _ => unreachable!(),
-    };
-
-    bay.cells[x as usize][y as usize] = Cell::Empty;
+    let bot = bay.get_bot_mut(bot_id).unwrap();
     bot.held_resource = Some(resource);
-
     bot.energy -= ENERGY_REQUIRED;
 }
 
@@ -65,7 +62,7 @@ pub fn export_harvest_resource(linker: &mut Linker<StoreData>) -> Result<(), Box
 
             // Check if the action is possible
             let bay = caller.data().bay;
-            let bot = bay.bots.get(&caller.data().bot_id).unwrap();
+            let bot = bay.get_bot(caller.data().bot_id).unwrap();
             let result = bot_can_harvest_resource(bot, x, y, bay)?;
 
             // Decide on the action
