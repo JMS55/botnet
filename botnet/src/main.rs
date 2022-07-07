@@ -1,4 +1,4 @@
-use botnet::game::Game;
+use botnet::Game;
 use std::thread;
 use std::time::{Duration, Instant};
 
