@@ -14,17 +14,6 @@ use std::collections::HashMap;
 impl Bay {
     fn new() -> Self {
         let mut bots = HashMap::new();
-        bots.insert(
-            22,
-            Bot {
-                id: 22,
-                player_id: 1717,
-                energy: 1000,
-                held_resource: None,
-                x: BAY_SIZE / 2,
-                y: BAY_SIZE / 2,
-            },
-        );
 
         let mut cells = [[Cell::Empty; BAY_SIZE]; BAY_SIZE];
         for i in 0..BAY_SIZE {
@@ -34,10 +23,28 @@ impl Bay {
             cells[BAY_SIZE - 1][i] = Cell::Wall;
         }
 
-        cells[BAY_SIZE / 2][BAY_SIZE / 2] = Cell::Bot { id: 22 };
-
         let mut rng = thread_rng();
-        for _ in 0..100 {
+
+        for i in 0..12 {
+            let (x, y): (usize, usize) = (rng.gen_range(0..BAY_SIZE), rng.gen_range(0..BAY_SIZE));
+            if cells[x][y] == Cell::Empty {
+                bots.insert(
+                    i,
+                    Bot {
+                        id: i,
+                        player_id: 1717,
+                        energy: 1000,
+                        held_resource: None,
+                        x,
+                        y,
+                    },
+                );
+
+                cells[x][y] = Cell::Bot { id: i };
+            }
+        }
+
+        for _ in 0..30 {
             loop {
                 let (x, y): (usize, usize) =
                     (rng.gen_range(0..BAY_SIZE), rng.gen_range(0..BAY_SIZE));
