@@ -1,17 +1,19 @@
-use botnet::bay::BayExt;
-use botnet::replay::ReplayRecord;
-use botnet_api::{Bay, Cell, BAY_SIZE};
-use macroquad::prelude::*;
+mod animation;
+mod render;
+
+use crate::animation::{animation_for_record, Animation};
+use crate::render::{draw_bay, window_conf};
+use botnet::{BayExt, ReplayRecord};
+use botnet_api::Bay;
+use macroquad::prelude::{clear_background, next_frame, Color, Texture2D};
 use rkyv::{Deserialize, Infallible};
 use std::env;
-use std::f32::consts::PI;
 use std::fs::File;
 use std::io::{BufReader, Read};
-use std::time::{Duration, Instant};
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    // Setup replay
+    // Setup replay file
     let replay_path = env::args().nth(1).expect("No replay file provided");
     let mut replay_file = BufReader::new(File::open(replay_path).unwrap());
     let mut record_bytes = Vec::new();
@@ -56,40 +58,35 @@ async fn main() {
     let textures = Box::new([bot_texture, resource_texture]);
 
     // Main loop
-    let mut last_record_end = Instant::now();
-    let mut next_record = None;
+    let mut current_record = None;
+    let mut current_animation: Option<Box<dyn Animation>> = None;
     loop {
         // Load next record if needed
-        if next_record.is_none() {
-            next_record = load_next_record();
+        if current_record.is_none() {
+            current_record = load_next_record();
+            if let Some(current_record) = &current_record {
+                current_animation = animation_for_record(current_record);
+            }
         }
 
-        // Apply record when available and it's been long enough since the last one
-        if next_record.is_some() && last_record_end.elapsed() >= Duration::from_millis(300) {
-            match next_record.take().unwrap() {
-                ReplayRecord::GameVersion(..) => unreachable!(),
-                ReplayRecord::InitialBayState { .. } => unreachable!(),
-                ReplayRecord::TickStart => {}
-                ReplayRecord::BotAction {
-                    bay_id,
-                    bot_id,
-                    bot_action,
-                } => {
-                    bay.apply_bot_action(bay_id, bot_id, bot_action, None);
-                    last_record_end = Instant::now();
-                }
-                ReplayRecord::RechargeBots { bay_id, bot_ids } => {
-                    bay.recharge_bots(bay_id, &bot_ids, None);
-                    last_record_end = Instant::now();
-                }
-            }
+        // Apply record when available and no animation is playing
+        if current_record.is_some() && current_animation.is_none() {
+            apply_record(current_record.take().unwrap(), &mut bay);
         }
 
         // Render the bay
         clear_background(Color::from_rgba(24, 25, 22, 255));
-        for x in 0..BAY_SIZE {
-            for y in 0..BAY_SIZE {
-                draw_tile(x, y, &bay, &*textures);
+        match current_animation.as_deref_mut() {
+            // Delegate render to an animation
+            Some(animation) => {
+                let finished = animation.draw(&bay, &*textures);
+                if finished {
+                    current_animation = None;
+                }
+            }
+            // Render the bay state exactly
+            None => {
+                draw_bay(&bay, &*textures);
             }
         }
 
@@ -97,58 +94,20 @@ async fn main() {
     }
 }
 
-fn draw_tile(x: usize, y: usize, bay: &Bay, textures: &[Texture2D]) {
-    match bay.cells[x][y] {
-        Cell::Empty => draw_circle(
-            x as f32 * 32.0 + 16.0,
-            y as f32 * 32.0 + 16.0,
-            2.0,
-            Color::from_rgba(44, 45, 42, 255),
-        ),
-        Cell::Wall => draw_rectangle_lines(
-            x as f32 * 32.0 + 8.0,
-            y as f32 * 32.0 + 8.0,
-            16.0,
-            16.0,
-            4.0,
-            Color::from_rgba(44, 45, 42, 255),
-        ),
-        Cell::Resource(..) => {
-            rand::srand((x * y) as u64);
-            let size_modifier = rand::gen_range(0.0, 6.0);
-            draw_texture_ex(
-                textures[1],
-                x as f32 * 32.0 + (size_modifier / 2.0),
-                y as f32 * 32.0 + (size_modifier / 2.0),
-                Color::from_rgba(96, 96, 96, 255),
-                DrawTextureParams {
-                    dest_size: Some(vec2(32.0 - size_modifier, 32.0 - size_modifier)),
-                    rotation: rand::gen_range(0.0, 2.0) * PI,
-                    ..Default::default()
-                },
-            );
+fn apply_record(record: ReplayRecord, bay: &mut Bay) {
+    match record {
+        ReplayRecord::GameVersion(..) => unreachable!(),
+        ReplayRecord::InitialBayState { .. } => unreachable!(),
+        ReplayRecord::TickStart => {}
+        ReplayRecord::BotAction {
+            bay_id,
+            bot_id,
+            bot_action,
+        } => {
+            bay.apply_bot_action(bay_id, bot_id, bot_action, None);
         }
-        Cell::Interconnect { .. } => todo!(),
-        Cell::Antenna { .. } => todo!(),
-        Cell::Bot { .. } => draw_texture_ex(
-            textures[0],
-            x as f32 * 32.0 + 4.0,
-            y as f32 * 32.0 + 4.0,
-            Color::from_rgba(190, 190, 190, 255),
-            DrawTextureParams {
-                dest_size: Some(vec2(24.0, 24.0)),
-                ..Default::default()
-            },
-        ),
-    }
-}
-
-fn window_conf() -> Conf {
-    Conf {
-        window_title: "BotnetReplayViewer".to_owned(),
-        window_width: BAY_SIZE as i32 * 32,
-        window_height: BAY_SIZE as i32 * 32,
-        window_resizable: false,
-        ..Default::default()
+        ReplayRecord::RechargeBots { bay_id, bot_ids } => {
+            bay.recharge_bots(bay_id, &bot_ids, None);
+        }
     }
 }
