@@ -23,6 +23,12 @@ impl Bay {
             let entity_id2 = next_entity_id.fetch_add(1, Ordering::SeqCst);
             let entity_id3 = next_entity_id.fetch_add(1, Ordering::SeqCst);
             let entity_id4 = next_entity_id.fetch_add(1, Ordering::SeqCst);
+
+            entities.insert(entity_id1, Entity::Wall);
+            entities.insert(entity_id2, Entity::Wall);
+            entities.insert(entity_id3, Entity::Wall);
+            entities.insert(entity_id4, Entity::Wall);
+
             cells[i][0] = Some(entity_id1);
             cells[i][BAY_SIZE - 1] = Some(entity_id2);
             cells[0][i] = Some(entity_id3);
@@ -36,6 +42,7 @@ impl Bay {
                 let (x, y) = (rng.gen_range(0..BAY_SIZE), rng.gen_range(0..BAY_SIZE));
                 if cells[x][y] == None {
                     let entity_id = next_entity_id.fetch_add(1, Ordering::SeqCst);
+
                     entities.insert(
                         entity_id,
                         Entity::Bot(Bot {
@@ -47,7 +54,9 @@ impl Bay {
                             y,
                         }),
                     );
+
                     cells[x][y] = Some(entity_id);
+
                     break;
                 }
             }
@@ -58,8 +67,11 @@ impl Bay {
                 let (x, y) = (rng.gen_range(0..BAY_SIZE), rng.gen_range(0..BAY_SIZE));
                 if cells[x][y] == None {
                     let entity_id = next_entity_id.fetch_add(1, Ordering::SeqCst);
+
                     entities.insert(entity_id, Entity::Resource(Resource::Silicon));
+
                     cells[x][y] = Some(entity_id);
+
                     break;
                 }
             }

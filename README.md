@@ -13,7 +13,7 @@ Currently, the only SDK provided is for the [Rust](https://www.rust-lang.org) la
 Fork the [example bot](example_bot) to get started.
 
 ## Usage
-Currently, the server is hardcoded to run a single instance of the example bot.
+Currently, the server is hardcoded to run a several instances of the example bot.
 
 To run the server with logs enabled, first compile the example bot:
 
@@ -25,4 +25,4 @@ and then compile and run the server:
 
 To view the replay, run [BotnetReplayViewer](botnet_replay_viewer):
 
-`cargo run --manifest-path=botnet_replay_viewer/Cargo.toml example.rplay`
+`cargo run --release --manifest-path=botnet_replay_viewer/Cargo.toml example.rplay`
