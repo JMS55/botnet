@@ -54,7 +54,7 @@ impl Game<'_> {
                     .iter()
                     .enumerate()
                     .map(|(entity_id, bay)| (entity_id as EntityID, bay))
-                    .collect::<Vec<_>>(),
+                    .collect::<Box<[_]>>(),
             )
         });
 

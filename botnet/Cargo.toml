@@ -3,6 +3,9 @@ name = "botnet"
 version = "0.1.0"
 edition = "2021"
 
+[profile.release]
+lto = true
+
 [dependencies]
 botnet_api = { version = "0.1", default-features = false, path = "../botnet_api" }
 wasmtime = "0.38"
