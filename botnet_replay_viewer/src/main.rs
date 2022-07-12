@@ -1,11 +1,12 @@
 mod animation;
-mod render;
+mod bay_renderer;
+mod bot_action_animations;
 
-use crate::animation::{animation_for_record, Animation};
-use crate::render::{draw_bay, window_conf};
+use crate::animation::Animation;
+use crate::bay_renderer::{window_conf, BayRenderer};
 use botnet::{BayExt, ReplayRecord};
 use botnet_api::Bay;
-use macroquad::prelude::{clear_background, next_frame, Color, Texture2D};
+use macroquad::prelude::next_frame;
 use rkyv::{Deserialize, Infallible};
 use std::env;
 use std::fs::File;
@@ -48,46 +49,31 @@ async fn main() {
         _ => unreachable!(),
     };
 
-    // Load textures
-    let bot_texture =
-        Texture2D::from_file_with_format(include_bytes!("../assets/ship_E.png"), None);
-    let resource_texture = Texture2D::from_file_with_format(
-        include_bytes!("../assets/meteor_detailedLarge.png"),
-        None,
-    );
-    let textures = Box::new([bot_texture, resource_texture]);
+    // Setup bay renderer
+    let mut bay_renderer = BayRenderer::new();
+    bay_renderer.prepare(&bay);
 
     // Main loop
     let mut current_record = None;
-    let mut current_animation: Option<Box<dyn Animation>> = None;
     loop {
         // Load next record if needed
         if current_record.is_none() {
             current_record = load_next_record();
-            if let Some(current_record) = &current_record {
-                current_animation = animation_for_record(current_record);
-            }
-        }
 
-        // Apply record when available and no animation is playing
-        if current_record.is_some() && current_animation.is_none() {
-            apply_record(current_record.take().unwrap(), &mut bay);
+            if let Some(current_record) = &current_record {
+                bay_renderer.animation =
+                    Animation::from_replay_record(current_record, &bay, &bay_renderer);
+            }
         }
 
         // Render the bay
-        clear_background(Color::from_rgba(24, 25, 22, 255));
-        match current_animation.as_deref_mut() {
-            // Delegate render to an animation
-            Some(animation) => {
-                let finished = animation.draw(&bay, &*textures);
-                if finished {
-                    current_animation = None;
-                }
-            }
-            // Render the bay state exactly
-            None => {
-                draw_bay(&bay, &*textures);
-            }
+        bay_renderer.draw_bay(&bay);
+
+        // Apply record when available and no animation is playing
+        if current_record.is_some() && bay_renderer.animation.is_none() {
+            apply_record(current_record.take().unwrap(), &mut bay);
+
+            bay_renderer.prepare(&bay);
         }
 
         next_frame().await
@@ -96,7 +82,7 @@ async fn main() {
 
 fn apply_record(record: ReplayRecord, bay: &mut Bay) {
     match record {
-        ReplayRecord::GameVersion(..) => unreachable!(),
+        ReplayRecord::GameVersion { .. } => unreachable!(),
         ReplayRecord::InitialBayState { .. } => unreachable!(),
         ReplayRecord::TickStart => {}
         ReplayRecord::BotAction {

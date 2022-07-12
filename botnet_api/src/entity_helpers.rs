@@ -58,26 +58,27 @@ impl Bay {
         self.cells[x as usize][y as usize]
             .map(|entity_id| self.entities.get(&entity_id))
             .flatten()
+            .map(|(entity, _, _)| entity)
     }
 
     pub fn get_bot_ids(&self) -> Box<[EntityID]> {
         self.entities
             .iter()
-            .filter(|(_, entity)| entity.is_bot())
+            .filter(|(_, (entity, _, _))| entity.is_bot())
             .map(|(entity_id, _)| *entity_id)
             .collect()
     }
 
     pub fn get_bot(&self, entity_id: EntityID) -> Option<&Bot> {
         match self.entities.get(&entity_id) {
-            Some(Entity::Bot(bot)) => Some(bot),
+            Some((Entity::Bot(bot), _, _)) => Some(bot),
             _ => None,
         }
     }
 
     pub fn get_bot_mut(&mut self, entity_id: EntityID) -> Option<&mut Bot> {
         match self.entities.get_mut(&entity_id) {
-            Some(Entity::Bot(bot)) => Some(bot),
+            Some((Entity::Bot(bot), _, _)) => Some(bot),
             _ => None,
         }
     }
@@ -93,11 +94,12 @@ impl ArchivedBay {
             .as_ref() // TODO: Remove as_ref() once rkyv updates
             .map(|entity_id| self.entities.get(&entity_id))
             .flatten()
+            .map(|(entity, _, _)| entity)
     }
 
     pub fn get_bot(&self, entity_id: EntityID) -> Option<&ArchivedBot> {
         match self.entities.get(&entity_id) {
-            Some(ArchivedEntity::Bot(bot)) => Some(bot),
+            Some((ArchivedEntity::Bot(bot), _, _)) => Some(bot),
             _ => None,
         }
     }

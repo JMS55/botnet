@@ -16,25 +16,7 @@ use std::sync::Arc;
 impl Bay {
     fn new(next_entity_id: Arc<AtomicU64>, test_player_id: EntityID) -> Self {
         let mut entities = HashMap::new();
-
         let mut cells = [[None; BAY_SIZE]; BAY_SIZE];
-        for i in 0..BAY_SIZE {
-            let entity_id1 = next_entity_id.fetch_add(1, Ordering::SeqCst);
-            let entity_id2 = next_entity_id.fetch_add(1, Ordering::SeqCst);
-            let entity_id3 = next_entity_id.fetch_add(1, Ordering::SeqCst);
-            let entity_id4 = next_entity_id.fetch_add(1, Ordering::SeqCst);
-
-            entities.insert(entity_id1, Entity::Wall);
-            entities.insert(entity_id2, Entity::Wall);
-            entities.insert(entity_id3, Entity::Wall);
-            entities.insert(entity_id4, Entity::Wall);
-
-            cells[i][0] = Some(entity_id1);
-            cells[i][BAY_SIZE - 1] = Some(entity_id2);
-            cells[0][i] = Some(entity_id3);
-            cells[BAY_SIZE - 1][i] = Some(entity_id4);
-        }
-
         let mut rng = thread_rng();
 
         for _ in 0..12 {
@@ -45,14 +27,18 @@ impl Bay {
 
                     entities.insert(
                         entity_id,
-                        Entity::Bot(Bot {
-                            entity_id,
-                            player_id: test_player_id,
-                            energy: 1000,
-                            held_resource: None,
-                            x,
-                            y,
-                        }),
+                        (
+                            Entity::Bot(Bot {
+                                entity_id,
+                                player_id: test_player_id,
+                                energy: 1000,
+                                held_resource: None,
+                                x,
+                                y,
+                            }),
+                            x as u32,
+                            y as u32,
+                        ),
                     );
 
                     cells[x][y] = Some(entity_id);
@@ -68,7 +54,10 @@ impl Bay {
                 if cells[x][y] == None {
                     let entity_id = next_entity_id.fetch_add(1, Ordering::SeqCst);
 
-                    entities.insert(entity_id, Entity::Resource(Resource::Silicon));
+                    entities.insert(
+                        entity_id,
+                        (Entity::Resource(Resource::Silicon), x as u32, y as u32),
+                    );
 
                     cells[x][y] = Some(entity_id);
 
