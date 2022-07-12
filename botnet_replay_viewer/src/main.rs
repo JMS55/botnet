@@ -58,7 +58,8 @@ async fn main() {
             current_record = load_next_record();
 
             if let Some(current_record) = &current_record {
-                bay_renderer.animation = Animation::from_record(current_record, &bay);
+                bay_renderer.animation =
+                    Animation::from_replay_record(current_record, &bay, &bay_renderer);
             }
         }
 
@@ -68,6 +69,8 @@ async fn main() {
         // Apply record when available and no animation is playing
         if current_record.is_some() && bay_renderer.animation.is_none() {
             apply_record(current_record.take().unwrap(), &mut bay);
+
+            bay_renderer.prepare(&bay);
         }
 
         next_frame().await

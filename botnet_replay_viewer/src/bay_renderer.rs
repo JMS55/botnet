@@ -21,16 +21,15 @@ pub fn window_conf() -> Conf {
 
 pub struct BayRenderer {
     pub animation: Option<Animation>,
-    entity_render_overrides: HashMap<EntityID, EntityRenderOverrides>,
+    pub entity_render_parameters: HashMap<EntityID, EntityRenderParameters>,
     textures: [Texture2D; 2],
 }
 
-#[derive(Default)]
-pub struct EntityRenderOverrides {
-    pub position_offset: Option<Vec2>,
-    pub rotation: Option<f32>,
-    pub scale: Option<Vec2>,
-    pub color: Option<Color>,
+pub struct EntityRenderParameters {
+    pub position: Vec2,
+    pub rotation: f32,
+    pub scale: Vec2,
+    pub color: Color,
 }
 
 impl BayRenderer {
@@ -45,16 +44,74 @@ impl BayRenderer {
 
         Self {
             animation: None,
-            entity_render_overrides: HashMap::new(),
+            entity_render_parameters: HashMap::new(),
             textures,
+        }
+    }
+
+    pub fn prepare(&mut self, bay: &Bay) {
+        self.prepare_existing_entities(bay);
+        self.prepare_new_entities(bay);
+    }
+
+    /// Update or remove existing EntityRenderParameters.
+    fn prepare_existing_entities(&mut self, bay: &Bay) {
+        self.entity_render_parameters
+            .retain(|entity_id, entity_render_parameters| {
+                match bay.entities.get(entity_id) {
+                    None => false,
+
+                    Some(Entity::Bot(_)) => {
+                        entity_render_parameters.position = todo!();
+                        // Keep existing bot rotation
+                        entity_render_parameters.scale = Vec2::ONE;
+                        entity_render_parameters.color = todo!();
+                        true
+                    }
+
+                    _ => {
+                        entity_render_parameters.position = todo!();
+                        entity_render_parameters.rotation = 0.0;
+                        entity_render_parameters.scale = Vec2::ONE;
+                        entity_render_parameters.color = todo!();
+                        true
+                    }
+                }
+            });
+    }
+
+    /// Add EntityRenderParameters for new entities.
+    fn prepare_new_entities(&mut self, bay: &Bay) {
+        let is_not_wall = |entity_id: &&EntityID| match bay.entities.get(entity_id) {
+            Some(Entity::Wall) => false,
+            _ => true,
+        };
+
+        for entity_id in bay
+            .entities
+            .keys()
+            .filter(|entity_id| !self.entity_render_parameters.contains_key(entity_id))
+            .filter(is_not_wall)
+        {
+            self.entity_render_parameters.insert(
+                *entity_id,
+                EntityRenderParameters {
+                    position: todo!(),
+                    rotation: 0.0,
+                    scale: Vec2::ONE,
+                    color: todo!(),
+                },
+            );
         }
     }
 
     pub fn draw_bay(&mut self, bay: &Bay) {
         // Tick animation
-        let mut animation_finished = false;
         if let Some(animation) = &mut self.animation {
-            animation_finished = animation.tick(&mut self.entity_render_overrides);
+            let animation_finished = animation.tick(&mut self.entity_render_parameters);
+            if animation_finished {
+                self.animation = None;
+            }
         }
 
         // Draw bay
@@ -62,12 +119,6 @@ impl BayRenderer {
         self.draw_ground();
         self.draw_walls();
         self.draw_entities(bay);
-
-        // Cleanup animation if finished
-        if animation_finished {
-            self.animation = None;
-            self.cleanup_entity_render_overrides(bay);
-        }
     }
 
     fn draw_ground(&self) {
@@ -97,118 +148,49 @@ impl BayRenderer {
         }
     }
 
-    // TODO: Cleanup/splitup
     fn draw_entities(&mut self, bay: &Bay) {
-        for x in 0..BAY_SIZE {
-            for y in 0..BAY_SIZE {
-                if let Some(entity_id) = bay.cells[x][y] {
-                    let entity = bay.entities.get(&entity_id).unwrap();
-                    let entity_render_overrides =
-                        &*self.entity_render_overrides.entry(entity_id).or_default();
-
-                    match entity {
-                        Entity::Wall => {}
-
-                        // TODO: Need to account for scale override
-                        Entity::Bot { .. } => {
-                            let position = (vec2(x as f32, y as f32) * TILE_SIZE as f32)
-                                + vec2(4.0, 4.0)
-                                + entity_render_overrides
-                                    .position_offset
-                                    .unwrap_or(Vec2::ZERO);
-                            let rotation = entity_render_overrides.rotation.unwrap_or(0.0);
-                            let scale = entity_render_overrides.scale.unwrap_or(Vec2::ONE);
-                            let color = entity_render_overrides
-                                .color
-                                .unwrap_or(Color::from_rgba(180, 180, 180, 255));
-                            draw_texture_ex(
-                                self.textures[0],
-                                position.x,
-                                position.y,
-                                color,
-                                DrawTextureParams {
-                                    dest_size: Some(
-                                        vec2((TILE_SIZE - 8) as f32, (TILE_SIZE - 8) as f32)
-                                            * scale,
-                                    ),
-                                    rotation,
-                                    ..Default::default()
-                                },
-                            );
-                        }
-
-                        // TODO: Need to account for scale override
-                        Entity::Resource { .. } => {
-                            rand::srand((x * y) as u64);
-                            let size_modifier = rand::gen_range(0.0, 6.0);
-
-                            let position = (vec2(x as f32, y as f32) * TILE_SIZE as f32)
-                                + vec2(size_modifier / 2.0, size_modifier / 2.0)
-                                + entity_render_overrides
-                                    .position_offset
-                                    .unwrap_or(Vec2::ZERO);
-                            let rotation = entity_render_overrides
-                                .rotation
-                                .unwrap_or(rand::gen_range(0.0, TAU));
-                            let scale = entity_render_overrides.scale.unwrap_or(Vec2::ONE);
-                            let color = entity_render_overrides
-                                .color
-                                .unwrap_or(Color::from_rgba(96, 96, 96, 255));
-
-                            draw_texture_ex(
-                                self.textures[1],
-                                position.x,
-                                position.y,
-                                color,
-                                DrawTextureParams {
-                                    dest_size: Some(
-                                        vec2(
-                                            TILE_SIZE as f32 - size_modifier,
-                                            TILE_SIZE as f32 - size_modifier,
-                                        ) * scale,
-                                    ),
-                                    rotation,
-                                    ..Default::default()
-                                },
-                            );
-                        }
-
-                        Entity::Interconnect { .. } => todo!(),
-
-                        Entity::Antenna { .. } => todo!(),
-                    }
+        for (entity_id, entity) in &bay.entities {
+            match entity {
+                Entity::Wall => {}
+                Entity::Bot { .. } => self.draw_entity(*entity_id, 0, (TILE_SIZE - 8) as f32, 0.0),
+                Entity::Resource { .. } => {
+                    rand::srand(*entity_id);
+                    self.draw_entity(
+                        *entity_id,
+                        1,
+                        TILE_SIZE as f32 - rand::gen_range(0.0, 6.0),
+                        rand::gen_range(0.0, TAU),
+                    );
                 }
+                Entity::Interconnect { .. } => todo!(),
+                Entity::Antenna { .. } => todo!(),
             }
         }
     }
 
-    fn cleanup_entity_render_overrides(&mut self, bay: &Bay) {
-        let entity_ids = self
-            .entity_render_overrides
-            .keys()
-            .copied()
-            .collect::<Box<[_]>>();
+    fn draw_entity(
+        &self,
+        entity_id: EntityID,
+        texture_index: usize,
+        base_size: f32,
+        base_rotation: f32,
+    ) {
+        let entity_render_parameters = self.entity_render_parameters.get(&entity_id).unwrap();
+        let size = base_size * entity_render_parameters.scale;
+        let position = entity_render_parameters.position * Vec2::splat(TILE_SIZE as f32)
+            + Vec2::splat(TILE_SIZE as f32 / 2.0)
+            - (size / 2.0);
 
-        for entity_id in entity_ids.into_iter() {
-            match bay.entities.get(&entity_id).unwrap() {
-                Entity::Bot { .. } => {
-                    let previous_rotation = self
-                        .entity_render_overrides
-                        .get(entity_id)
-                        .unwrap()
-                        .rotation;
-
-                    self.entity_render_overrides.insert(
-                        *entity_id,
-                        EntityRenderOverrides {
-                            rotation: previous_rotation,
-                            ..Default::default()
-                        },
-                    )
-                }
-
-                _ => self.entity_render_overrides.remove(entity_id),
-            };
-        }
+        draw_texture_ex(
+            self.textures[texture_index],
+            position.x,
+            position.y,
+            entity_render_parameters.color,
+            DrawTextureParams {
+                dest_size: Some(size),
+                rotation: base_rotation + entity_render_parameters.rotation,
+                ..Default::default()
+            },
+        );
     }
 }
