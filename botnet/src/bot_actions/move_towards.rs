@@ -44,6 +44,8 @@ pub fn apply_bot_move_towards(bay: &mut Bay, bot_id: EntityID, direction: Direct
 
     bay.cells[old_x][old_y] = None;
     bay.cells[new_x][new_y] = Some(bot_id);
+    let (_, x, y) = bay.entities.get_mut(&bot_id).unwrap();
+    (*x, *y) = (new_x as u32, new_y as u32);
 }
 
 pub fn export_move_towards(linker: &mut Linker<StoreData>) -> Result<(), Box<dyn Error>> {

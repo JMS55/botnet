@@ -22,7 +22,7 @@ pub fn animation_for_bot_action(
                         ..Default::default()
                     },
                     Keyframe {
-                        time: 0.35,
+                        time: 0.1,
                         position: Some(match direction {
                             Direction::Up => vec2(bot.x as f32, (bot.y - 1) as f32),
                             Direction::Down => vec2(bot.x as f32, (bot.y + 1) as f32),
@@ -32,8 +32,8 @@ pub fn animation_for_bot_action(
                         rotation: Some(match direction {
                             Direction::Up => 0.0,
                             Direction::Down => PI,
-                            Direction::Left => PI / 2.0,
-                            Direction::Right => PI * 1.5,
+                            Direction::Left => -(PI / 2.0),
+                            Direction::Right => PI / 2.0,
                         }),
                         ..Default::default()
                     },

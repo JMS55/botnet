@@ -1,8 +1,8 @@
 use crate::animation::Animation;
 use botnet_api::{Bay, Entity, EntityID, BAY_SIZE};
 use macroquad::prelude::{
-    clear_background, draw_circle, draw_circle_lines, draw_texture_ex, rand, vec2, Color, Conf,
-    DrawTextureParams, Texture2D, Vec2,
+    clear_background, draw_circle, draw_texture_ex, rand, vec2, Color, Conf, DrawTextureParams,
+    Texture2D, Vec2,
 };
 use std::collections::HashMap;
 use std::f32::consts::TAU;
@@ -12,8 +12,8 @@ pub const TILE_SIZE: u32 = 32;
 pub fn window_conf() -> Conf {
     Conf {
         window_title: "BotnetReplayViewer".to_owned(),
-        window_width: BAY_SIZE as i32 * TILE_SIZE as i32,
-        window_height: BAY_SIZE as i32 * TILE_SIZE as i32,
+        window_width: (BAY_SIZE + 1) as i32 * TILE_SIZE as i32,
+        window_height: (BAY_SIZE + 1) as i32 * TILE_SIZE as i32,
         window_resizable: false,
         ..Default::default()
     }
@@ -58,48 +58,37 @@ impl BayRenderer {
     fn prepare_existing_entities(&mut self, bay: &Bay) {
         self.entity_render_parameters
             .retain(|entity_id, entity_render_parameters| {
-                match bay.entities.get(entity_id) {
-                    None => false,
-
-                    Some(Entity::Bot(_)) => {
-                        entity_render_parameters.position = todo!();
-                        // Keep existing bot rotation
-                        entity_render_parameters.scale = Vec2::ONE;
-                        entity_render_parameters.color = todo!();
-                        true
+                if let Some((entity, x, y)) = bay.entities.get(entity_id) {
+                    entity_render_parameters.position = vec2(*x as f32, *y as f32);
+                    match entity {
+                        Entity::Bot(_) => {}
+                        _ => entity_render_parameters.rotation = 0.0,
                     }
-
-                    _ => {
-                        entity_render_parameters.position = todo!();
-                        entity_render_parameters.rotation = 0.0;
-                        entity_render_parameters.scale = Vec2::ONE;
-                        entity_render_parameters.color = todo!();
-                        true
-                    }
+                    entity_render_parameters.scale = Vec2::ONE;
+                    entity_render_parameters.color = entity_color(entity);
+                    true
+                } else {
+                    false
                 }
             });
     }
 
     /// Add EntityRenderParameters for new entities.
     fn prepare_new_entities(&mut self, bay: &Bay) {
-        let is_not_wall = |entity_id: &&EntityID| match bay.entities.get(entity_id) {
-            Some(Entity::Wall) => false,
-            _ => true,
-        };
-
-        for entity_id in bay
+        let new_entities = bay
             .entities
-            .keys()
-            .filter(|entity_id| !self.entity_render_parameters.contains_key(entity_id))
-            .filter(is_not_wall)
-        {
+            .iter()
+            .filter(|(entity_id, _)| !self.entity_render_parameters.contains_key(entity_id))
+            .collect::<Box<[_]>>();
+
+        for (entity_id, (entity, x, y)) in new_entities.iter() {
             self.entity_render_parameters.insert(
-                *entity_id,
+                **entity_id,
                 EntityRenderParameters {
-                    position: todo!(),
+                    position: vec2(*x as f32, *y as f32),
                     rotation: 0.0,
                     scale: Vec2::ONE,
-                    color: todo!(),
+                    color: entity_color(entity),
                 },
             );
         }
@@ -117,31 +106,16 @@ impl BayRenderer {
         // Draw bay
         clear_background(Color::from_rgba(24, 25, 22, 255));
         self.draw_ground();
-        self.draw_walls();
         self.draw_entities(bay);
     }
 
     fn draw_ground(&self) {
-        for x in 1..BAY_SIZE - 1 {
-            for y in 1..BAY_SIZE - 1 {
+        for x in 0..BAY_SIZE {
+            for y in 0..BAY_SIZE {
                 draw_circle(
-                    x as f32 * TILE_SIZE as f32 + (TILE_SIZE / 2) as f32,
-                    y as f32 * TILE_SIZE as f32 + (TILE_SIZE / 2) as f32,
-                    2.0,
-                    Color::from_rgba(44, 45, 42, 255),
-                );
-            }
-        }
-    }
-
-    fn draw_walls(&self) {
-        for i in 0..BAY_SIZE {
-            for (x, y) in [(i, 0), (i, BAY_SIZE - 1), (0, i), (BAY_SIZE - 1, i)] {
-                draw_circle_lines(
-                    x as f32 * TILE_SIZE as f32 + (TILE_SIZE / 2) as f32,
-                    y as f32 * TILE_SIZE as f32 + (TILE_SIZE / 2) as f32,
-                    6.0,
-                    2.0,
+                    (x + 1) as f32 * TILE_SIZE as f32,
+                    (y + 1) as f32 * TILE_SIZE as f32,
+                    if x * y % 2 == 0 { 2.0 } else { 3.0 },
                     Color::from_rgba(44, 45, 42, 255),
                 );
             }
@@ -150,10 +124,9 @@ impl BayRenderer {
 
     fn draw_entities(&mut self, bay: &Bay) {
         for (entity_id, entity) in &bay.entities {
-            match entity {
-                Entity::Wall => {}
-                Entity::Bot { .. } => self.draw_entity(*entity_id, 0, (TILE_SIZE - 8) as f32, 0.0),
-                Entity::Resource { .. } => {
+            match entity.0 {
+                Entity::Bot(_) => self.draw_entity(*entity_id, 0, (TILE_SIZE - 8) as f32, 0.0),
+                Entity::Resource(_) => {
                     rand::srand(*entity_id);
                     self.draw_entity(
                         *entity_id,
@@ -178,7 +151,7 @@ impl BayRenderer {
         let entity_render_parameters = self.entity_render_parameters.get(&entity_id).unwrap();
         let size = base_size * entity_render_parameters.scale;
         let position = entity_render_parameters.position * Vec2::splat(TILE_SIZE as f32)
-            + Vec2::splat(TILE_SIZE as f32 / 2.0)
+            + Vec2::splat(TILE_SIZE as f32)
             - (size / 2.0);
 
         draw_texture_ex(
@@ -192,5 +165,14 @@ impl BayRenderer {
                 ..Default::default()
             },
         );
+    }
+}
+
+fn entity_color(entity: &Entity) -> Color {
+    match entity {
+        Entity::Bot(_) => Color::from_rgba(180, 180, 180, 255),
+        Entity::Resource(_) => Color::from_rgba(96, 96, 96, 255),
+        Entity::Interconnect { .. } => todo!(),
+        Entity::Antenna { .. } => todo!(),
     }
 }

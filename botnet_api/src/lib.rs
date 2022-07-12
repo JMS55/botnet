@@ -18,7 +18,7 @@ pub const BAY_SIZE: usize = 24;
 
 #[derive(Archive, Serialize, Deserialize, Clone)]
 pub struct Bay {
-    pub entities: HashMap<EntityID, Entity>,
+    pub entities: HashMap<EntityID, (Entity, u32, u32)>,
     pub cells: [[Option<EntityID>; BAY_SIZE]; BAY_SIZE],
 }
 
@@ -26,7 +26,6 @@ pub type EntityID = u64;
 
 #[derive(Archive, Serialize, Deserialize, Clone)]
 pub enum Entity {
-    Wall,
     Bot(Bot),
     Resource(Resource),
     Interconnect { next_bay_id: EntityID },

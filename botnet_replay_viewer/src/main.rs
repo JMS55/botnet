@@ -49,9 +49,12 @@ async fn main() {
         _ => unreachable!(),
     };
 
+    // Setup bay renderer
+    let mut bay_renderer = BayRenderer::new();
+    bay_renderer.prepare(&bay);
+
     // Main loop
     let mut current_record = None;
-    let mut bay_renderer = BayRenderer::new();
     loop {
         // Load next record if needed
         if current_record.is_none() {

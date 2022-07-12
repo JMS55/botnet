@@ -4,12 +4,18 @@ use botnet::ReplayRecord;
 use botnet_api::{Bay, EntityID};
 use macroquad::prelude::{Color, Vec2};
 use std::collections::HashMap;
-use std::ops::{Mul, Sub};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 pub struct Animation {
-    keyframes: Box<[(EntityID, Box<[Keyframe]>)]>,
+    entity_keyframes: Box<[EntityKeyframes]>,
     start_time: Instant,
+    duration: Duration,
+}
+
+struct EntityKeyframes {
+    entity_id: EntityID,
+    keyframes: Box<[Keyframe]>,
+    target_keyframe: usize,
 }
 
 #[derive(Default)]
@@ -47,17 +53,25 @@ impl Animation {
         keyframes: &[(EntityID, &[Keyframe])],
         bay_renderer: &BayRenderer,
     ) -> Self {
+        let duration = keyframes
+            .iter()
+            .map(|(_, keyframes)| keyframes.last().unwrap().time)
+            .max_by(f32::total_cmp)
+            .unwrap();
+
+        let keyframes = keyframes
+            .iter()
+            .map(|(entity_id, keyframes)| EntityKeyframes {
+                entity_id: *entity_id,
+                keyframes: fill_keyframes_for_entity(*entity_id, keyframes, bay_renderer),
+                target_keyframe: 1,
+            })
+            .collect();
+
         Self {
-            keyframes: keyframes
-                .iter()
-                .map(|(entity_id, keyframes)| {
-                    (
-                        *entity_id,
-                        Self::fill_keyframes_for_entity(*entity_id, keyframes, bay_renderer),
-                    )
-                })
-                .collect(),
+            entity_keyframes: keyframes,
             start_time: Instant::now(),
+            duration: Duration::from_secs_f32(duration),
         }
     }
 
@@ -66,113 +80,92 @@ impl Animation {
         keyframes: &[Keyframe],
         bay_renderer: &BayRenderer,
     ) -> Self {
+        let duration = keyframes.last().unwrap().time;
+
+        let keyframes = Box::new([EntityKeyframes {
+            entity_id,
+            keyframes: fill_keyframes_for_entity(entity_id, keyframes, bay_renderer),
+            target_keyframe: 1,
+        }]);
+
         Self {
-            keyframes: Box::new([(
-                entity_id,
-                Self::fill_keyframes_for_entity(entity_id, keyframes, bay_renderer),
-            )]),
+            entity_keyframes: keyframes,
             start_time: Instant::now(),
+            duration: Duration::from_secs_f32(duration),
         }
     }
 
     pub fn tick(
         &mut self,
-        entity_render_overrides: &mut HashMap<EntityID, EntityRenderParameters>,
+        entity_render_parameters: &mut HashMap<EntityID, EntityRenderParameters>,
     ) -> bool {
-        // let elapsed_time = self.start_time.elapsed().as_secs_f32();
-        // let end_time = self.keyframes.last().unwrap().time;
-        // let finished = elapsed_time >= end_time;
+        let elapsed_time = self.start_time.elapsed();
+        let finished = elapsed_time >= self.duration;
 
-        // Find the target keyframe for each entity in the animation
-        // let mut entity_found_keyframe = HashSet::new();
-        // let mut keyframe_indices = Vec::with_capacity(self.keyframes.len());
-        // for (i, keyframe) in self.keyframes.iter().enumerate() {
-        //     if keyframe.time >= elapsed_time && !entity_found_keyframe.contains(&keyframe.entity_id)
-        //     {
-        //         keyframe_indices.push(i);
-        //         entity_found_keyframe.insert(keyframe.entity_id);
-        //     }
-        // }
+        let elapsed_time = elapsed_time.as_secs_f32();
+        for entity_keyframes in self.entity_keyframes.iter_mut() {
+            if entity_keyframes.keyframes[entity_keyframes.target_keyframe].time < elapsed_time {
+                entity_keyframes.target_keyframe += 1;
+            }
 
-        // // Tween between each entity's current EntityRenderOverrides and the one in the keyframe
-        // let ease = ease_in_out_quadratic(elapsed_time / end_time);
-        // for keyframe_index in keyframe_indices {
-        //     let keyframe = &self.keyframes[keyframe_index];
-        //     let entity_render_overrides = entity_render_overrides
-        //         .entry(keyframe.entity_id)
-        //         .or_default();
+            if entity_keyframes.target_keyframe != entity_keyframes.keyframes.len() {
+                let previous_keyframe =
+                    &entity_keyframes.keyframes[entity_keyframes.target_keyframe - 1];
+                let target_keyframe = &entity_keyframes.keyframes[entity_keyframes.target_keyframe];
 
-        //     tween(
-        //         &mut entity_render_overrides.position,
-        //         keyframe.entity_render_overrides.position,
-        //         todo!(),
-        //         ease,
-        //     );
+                let ease = ease_in_out_quadratic(
+                    (elapsed_time - previous_keyframe.time)
+                        / (target_keyframe.time - previous_keyframe.time),
+                );
 
-        //     tween(
-        //         &mut entity_render_overrides.rotation,
-        //         keyframe.entity_render_overrides.rotation,
-        //         0.0,
-        //         ease,
-        //     );
-
-        //     tween(
-        //         &mut entity_render_overrides.scale,
-        //         keyframe.entity_render_overrides.scale,
-        //         Vec2::ONE,
-        //         ease,
-        //     );
-
-        // let mut ero_color = entity_render_overrides.color.as_ref().map(Color::to_vec);
-        // let keyframe_color = keyframe
-        //     .entity_render_overrides
-        //     .color
-        //     .as_ref()
-        //     .map(Color::to_vec);
-        // tween(&mut ero_color, keyframe_color, todo!(), ease);
-        // entity_render_overrides.color = ero_color.map(Color::from_vec);
-        // }
-
-        // finished
-
-        todo!()
-    }
-
-    fn fill_keyframes_for_entity(
-        entity_id: EntityID,
-        keyframes: &[Keyframe],
-        bay_renderer: &BayRenderer,
-    ) -> Box<[Keyframe]> {
-        keyframes
-            .iter()
-            .map(|keyframe| {
-                let current = bay_renderer
-                    .entity_render_parameters
-                    .get(&entity_id)
+                let entity_render_parameters = entity_render_parameters
+                    .get_mut(&entity_keyframes.entity_id)
                     .unwrap();
 
-                Keyframe {
-                    time: keyframe.time,
-                    position: keyframe.position.or(Some(current.position)),
-                    rotation: keyframe.rotation.or(Some(current.rotation)),
-                    scale: keyframe.scale.or(Some(current.scale)),
-                    color: keyframe.color.or(Some(current.color)),
-                }
-            })
-            .collect()
+                entity_render_parameters.position = previous_keyframe.position.unwrap()
+                    + (target_keyframe.position.unwrap() - previous_keyframe.position.unwrap())
+                        * ease;
+                entity_render_parameters.rotation = previous_keyframe.rotation.unwrap()
+                    + (target_keyframe.rotation.unwrap() - previous_keyframe.rotation.unwrap())
+                        * ease;
+                entity_render_parameters.scale = previous_keyframe.scale.unwrap()
+                    + (target_keyframe.scale.unwrap() - previous_keyframe.scale.unwrap()) * ease;
+                entity_render_parameters.color = Color::from_vec(
+                    previous_keyframe.color.unwrap().to_vec()
+                        + (target_keyframe.color.unwrap().to_vec()
+                            - previous_keyframe.color.unwrap().to_vec())
+                            * ease,
+                );
+            }
+        }
+
+        finished
     }
 }
 
-// fn tween<T>(current: &mut Option<T>, target: Option<T>, default: T, ease: f32)
-// where
-//     T: PartialEq + Copy + Sub<Output = T> + Mul<f32, Output = T>,
-// {
-//     if *current != target {
-//         let c = current.unwrap_or(default);
-//         let t = target.unwrap_or(default);
-//         *current = Some((t - c) * ease);
-//     }
-// }
+fn fill_keyframes_for_entity(
+    entity_id: EntityID,
+    keyframes: &[Keyframe],
+    bay_renderer: &BayRenderer,
+) -> Box<[Keyframe]> {
+    keyframes
+        .iter()
+        .map(|keyframe| {
+            let current = bay_renderer
+                .entity_render_parameters
+                .get(&entity_id)
+                .unwrap();
+
+            Keyframe {
+                time: keyframe.time,
+                position: keyframe.position.or(Some(current.position)),
+                rotation: keyframe.rotation.or(Some(current.rotation)),
+                scale: keyframe.scale.or(Some(current.scale)),
+                color: keyframe.color.or(Some(current.color)),
+            }
+        })
+        .collect()
+}
 
 fn ease_in_out_quadratic(t: f32) -> f32 {
     if t < 0.5 {
