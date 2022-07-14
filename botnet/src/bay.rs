@@ -122,8 +122,12 @@ impl Bay {
                 let player = &players.get(&bot.controller_id).unwrap();
 
                 match compute_bot_action(*bot_id, &self, player, wasm_context) {
-                    Ok(bot_action) => {
-                        trace!("Bot[{bot_id}] chose action {:?}", bot_action);
+                    Ok((bot_action, script_duration)) => {
+                        trace!(
+                            "Bot[{bot_id}] chose action {:?} after {:?}",
+                            bot_action,
+                            script_duration
+                        );
 
                         self.apply_bot_action(bay_id, *bot_id, bot_action, replay_recorder);
                     }

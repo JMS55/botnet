@@ -4,6 +4,7 @@ use crate::game::Player;
 use crate::wasm_context::{StoreData, WasmContext};
 use botnet_api::{Bay, EntityID};
 use std::error::Error;
+use std::time::{Duration, Instant};
 use wasmtime::{Store, StoreLimitsBuilder};
 
 /// Runs the player's wasm script to decide on an action for one of their bots.
@@ -12,7 +13,7 @@ pub fn compute_bot_action(
     bay: &Bay,
     player: &Player,
     wasm_context: &WasmContext,
-) -> Result<BotAction, Box<dyn Error>> {
+) -> Result<(BotAction, Duration), Box<dyn Error>> {
     // Setup an instance of the bot script
     let mut store = Store::new(
         &wasm_context.engine,
@@ -66,6 +67,7 @@ pub fn compute_bot_action(
     )?;
 
     // Tick the bot instance to compute an action for the bot to take
+    let script_start = Instant::now();
     store.set_epoch_deadline(BOT_TIME_LIMIT);
     instance_tick.call(
         &mut store,
@@ -77,6 +79,7 @@ pub fn compute_bot_action(
             NETWORK_MEMORY_SIZE as u32,
         ),
     )?;
+    let script_duration = script_start.elapsed();
 
     // Copy network memory from the bot instance back to the player's account
     instance_memory.read(
@@ -90,5 +93,6 @@ pub fn compute_bot_action(
     store
         .data()
         .bot_action
+        .map(|action| (action, script_duration))
         .ok_or_else(|| "Bot script did not set an action".into())
 }
