@@ -5,7 +5,7 @@ use crate::replay::ReplayRecorder;
 use crate::wasm_context::WasmContext;
 use botnet_api::{Bay, Bot, Entity, EntityID, Resource, BAY_SIZE};
 use extension_traits::extension;
-use log::info;
+use log::{info, warn};
 use rand::{thread_rng, Rng};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -104,7 +104,7 @@ impl Bay {
                         self.apply_bot_action(bay_id, *bot_id, bot_action, replay_recorder);
                     }
                     result => {
-                        info!("Bot[{bot_id}] did not choose an action: {:?}", result);
+                        warn!("Bot[{bot_id}] did not choose an action: {:?}", result);
                     }
                 }
             }
