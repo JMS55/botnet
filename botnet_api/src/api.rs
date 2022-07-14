@@ -1,5 +1,7 @@
 use crate::{ActionError, ArchivedBot, Direction};
 
+pub const BOTNET_API_VERSION: [u32; 3] = [0, 1, 0];
+
 impl ArchivedBot {
     pub fn move_towards(&self, direction: Direction) -> Result<(), ActionError> {
         extern "C" {

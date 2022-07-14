@@ -1,4 +1,4 @@
-mod api;
+pub mod api;
 mod entity_helpers;
 pub mod pathfinding;
 
