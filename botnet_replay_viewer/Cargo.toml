@@ -9,5 +9,5 @@ lto = true
 [dependencies]
 botnet = { version = "0.1", path = "../botnet" }
 botnet_api = { version = "0.1", default-features = false, path = "../botnet_api" }
-macroquad = "0.3"
 rkyv = "0.7"
+macroquad = "0.3"

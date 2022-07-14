@@ -106,7 +106,7 @@ impl BayRenderer {
         }
 
         // Draw bay
-        clear_background(Color::from_rgba(24, 25, 22, 255));
+        clear_background(Color::from_rgba(50, 49, 59, 244));
         self.draw_ground();
         self.draw_entities(bay);
     }
@@ -118,7 +118,11 @@ impl BayRenderer {
                     (x + 1) as f32 * TILE_SIZE,
                     (y + 1) as f32 * TILE_SIZE,
                     if x * y % 2 == 0 { 2.0 } else { 3.0 },
-                    Color::from_rgba(44, 45, 42, 255),
+                    if x * y % 2 == 0 {
+                        Color::from_rgba(93, 71, 118, 255)
+                    } else {
+                        Color::from_rgba(70, 60, 94, 255)
+                    },
                 );
             }
         }
@@ -192,14 +196,14 @@ impl BayRenderer {
 
 fn entity_color(entity: &Entity) -> Color {
     match entity {
-        Entity::Bot(_) => Color::from_rgba(180, 180, 180, 255),
-        Entity::Antenna(_) => Color::from_rgba(96, 31, 74, 255),
+        Entity::Bot(_) => Color::from_rgba(255, 255, 255, 255),
+        Entity::Antenna(_) => Color::from_rgba(141, 216, 148, 255),
         Entity::Interconnect { .. } => todo!(),
         Entity::Resource(resource) => match resource {
-            Resource::Copper => Color::from_rgba(62, 62, 28, 255),
-            Resource::Gold => Color::from_rgba(96, 96, 40, 255),
-            Resource::Silicon => Color::from_rgba(90, 90, 90, 255),
-            Resource::Plastic => Color::from_rgba(150, 150, 150, 255),
+            Resource::Copper => Color::from_rgba(243, 167, 135, 255),
+            Resource::Gold => Color::from_rgba(253, 254, 137, 255),
+            Resource::Silicon => Color::from_rgba(133, 83, 149, 255),
+            Resource::Plastic => Color::from_rgba(69, 147, 165, 255),
         },
     }
 }
