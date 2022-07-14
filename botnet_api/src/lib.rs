@@ -70,6 +70,7 @@ pub enum Direction {
     Right,
 }
 
+#[derive(PartialEq, Eq)]
 pub enum ActionError {
     ActionNotPossible,
     NotEnoughEnergy,
