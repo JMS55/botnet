@@ -13,7 +13,7 @@ Currently, the only SDK provided is for the [Rust](https://www.rust-lang.org) la
 Fork the [example bot](example_bot) to get started.
 
 ## Usage
-Currently, the server is hardcoded to run a several instances of the example bot.
+Currently, the server is hardcoded to run several instances of the example bot.
 
 To run the server with logs enabled, first compile the example bot:
 
