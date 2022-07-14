@@ -3,9 +3,13 @@ use std::collections::{HashMap, VecDeque};
 
 impl ArchivedBot {
     /// Find a path to the nearest cell that satisfies a goal function.
-    pub fn find_path_to<F>(&self, goal_function: F, bay: &ArchivedBay) -> Option<Vec<(u32, u32)>>
+    pub fn find_path_to<'a, F>(
+        &'a self,
+        goal_function: F,
+        bay: &'a ArchivedBay,
+    ) -> Option<Vec<(u32, u32)>>
     where
-        F: Fn(u32, u32, &ArchivedBay) -> bool,
+        F: Fn(u32, u32, &'a ArchivedBot, &'a ArchivedBay) -> bool,
     {
         let mut frontier = VecDeque::new();
         let mut came_from: HashMap<(u32, u32), (u32, u32)> = HashMap::new();
@@ -14,10 +18,10 @@ impl ArchivedBot {
 
         let mut goal = None;
         let mut real_goal = (0, 0);
-        let mut neighbors_goal = |(x, y)| {
+        let mut is_neighboring_goal = |(x, y)| {
             for neighbor in neighbors(x, y) {
                 if let Some((neighbor_x, neighbor_y)) = neighbor {
-                    if (goal_function)(neighbor_x, neighbor_y, bay) {
+                    if (goal_function)(neighbor_x, neighbor_y, self, bay) {
                         real_goal = (neighbor_x, neighbor_y);
                         return true;
                     }
@@ -27,7 +31,7 @@ impl ArchivedBot {
         };
 
         while let Some(visiting) = frontier.pop_front() {
-            if (neighbors_goal)(visiting) {
+            if (is_neighboring_goal)(visiting) {
                 goal = Some(visiting);
                 break;
             }
@@ -55,8 +59,8 @@ impl ArchivedBot {
 }
 
 /// Goal function for finding any resource.
-pub const RESOURCE: fn(u32, u32, &ArchivedBay) -> bool = resource_exists_at_position;
-fn resource_exists_at_position(x: u32, y: u32, bay: &ArchivedBay) -> bool {
+pub const RESOURCE: fn(u32, u32, &ArchivedBot, &ArchivedBay) -> bool = resource_exists_at_position;
+fn resource_exists_at_position(x: u32, y: u32, _bot: &ArchivedBot, bay: &ArchivedBay) -> bool {
     bay.get_entity_at_position(x, y)
         .map(ArchivedEntity::is_resource)
         .unwrap_or(false)
