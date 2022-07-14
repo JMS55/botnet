@@ -163,6 +163,10 @@ impl Bay {
         match bot_action {
             BotAction::MoveTowards(direction) => apply_bot_move_towards(self, bot_id, direction),
             BotAction::HarvestResource { x, y } => apply_bot_harvest_resource(self, bot_id, x, y),
+            BotAction::DepositResource { x, y } => apply_bot_deposit_resource(self, bot_id, x, y),
+            BotAction::WithdrawResource { resource, x, y } => {
+                apply_bot_withdraw_resource(self, bot_id, resource, x, y)
+            }
         }
 
         if let Some(replay_recorder) = replay_recorder {

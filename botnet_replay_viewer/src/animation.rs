@@ -41,7 +41,7 @@ impl Animation {
                 bot_id, bot_action, ..
             } => Some(animation_for_bot_action(
                 bot_action,
-                *bot_id,
+                bay.get_bot(*bot_id).unwrap(),
                 bay,
                 bay_renderer,
             )),
@@ -49,10 +49,7 @@ impl Animation {
         }
     }
 
-    pub fn from_keyframes(
-        keyframes: &[(EntityID, &[Keyframe])],
-        bay_renderer: &BayRenderer,
-    ) -> Self {
+    pub fn new(keyframes: &[(EntityID, &[Keyframe])], bay_renderer: &BayRenderer) -> Self {
         let duration = keyframes
             .iter()
             .map(|(_, keyframes)| keyframes.last().unwrap().time)
@@ -75,7 +72,7 @@ impl Animation {
         }
     }
 
-    pub fn from_keyframes_single_entity(
+    pub fn new_single_entity(
         entity_id: EntityID,
         keyframes: &[Keyframe],
         bay_renderer: &BayRenderer,
@@ -104,39 +101,43 @@ impl Animation {
 
         let elapsed_time = elapsed_time.as_secs_f32();
         for entity_keyframes in self.entity_keyframes.iter_mut() {
+            if entity_keyframes.target_keyframe == entity_keyframes.keyframes.len() {
+                continue;
+            }
+
             if entity_keyframes.keyframes[entity_keyframes.target_keyframe].time < elapsed_time {
                 entity_keyframes.target_keyframe += 1;
             }
 
-            if entity_keyframes.target_keyframe != entity_keyframes.keyframes.len() {
-                let previous_keyframe =
-                    &entity_keyframes.keyframes[entity_keyframes.target_keyframe - 1];
-                let target_keyframe = &entity_keyframes.keyframes[entity_keyframes.target_keyframe];
-
-                let ease = ease_in_out_quadratic(
-                    (elapsed_time - previous_keyframe.time)
-                        / (target_keyframe.time - previous_keyframe.time),
-                );
-
-                let entity_render_parameters = entity_render_parameters
-                    .get_mut(&entity_keyframes.entity_id)
-                    .unwrap();
-
-                entity_render_parameters.position = previous_keyframe.position.unwrap()
-                    + (target_keyframe.position.unwrap() - previous_keyframe.position.unwrap())
-                        * ease;
-                entity_render_parameters.rotation = previous_keyframe.rotation.unwrap()
-                    + (target_keyframe.rotation.unwrap() - previous_keyframe.rotation.unwrap())
-                        * ease;
-                entity_render_parameters.scale = previous_keyframe.scale.unwrap()
-                    + (target_keyframe.scale.unwrap() - previous_keyframe.scale.unwrap()) * ease;
-                entity_render_parameters.color = Color::from_vec(
-                    previous_keyframe.color.unwrap().to_vec()
-                        + (target_keyframe.color.unwrap().to_vec()
-                            - previous_keyframe.color.unwrap().to_vec())
-                            * ease,
-                );
+            if entity_keyframes.target_keyframe == entity_keyframes.keyframes.len() {
+                continue;
             }
+
+            let previous_keyframe =
+                &entity_keyframes.keyframes[entity_keyframes.target_keyframe - 1];
+            let target_keyframe = &entity_keyframes.keyframes[entity_keyframes.target_keyframe];
+
+            let ease = ease_in_out_quadratic(
+                (elapsed_time - previous_keyframe.time)
+                    / (target_keyframe.time - previous_keyframe.time),
+            );
+
+            let entity_render_parameters = entity_render_parameters
+                .get_mut(&entity_keyframes.entity_id)
+                .unwrap();
+
+            entity_render_parameters.position = previous_keyframe.position.unwrap()
+                + (target_keyframe.position.unwrap() - previous_keyframe.position.unwrap()) * ease;
+            entity_render_parameters.rotation = previous_keyframe.rotation.unwrap()
+                + (target_keyframe.rotation.unwrap() - previous_keyframe.rotation.unwrap()) * ease;
+            entity_render_parameters.scale = previous_keyframe.scale.unwrap()
+                + (target_keyframe.scale.unwrap() - previous_keyframe.scale.unwrap()) * ease;
+            entity_render_parameters.color = Color::from_vec(
+                previous_keyframe.color.unwrap().to_vec()
+                    + (target_keyframe.color.unwrap().to_vec()
+                        - previous_keyframe.color.unwrap().to_vec())
+                        * ease,
+            );
         }
 
         finished

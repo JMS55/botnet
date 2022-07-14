@@ -1,4 +1,4 @@
-use crate::{ActionError, ArchivedBot, Direction};
+use crate::{ActionError, ArchivedBot, Direction, Resource};
 
 pub const BOTNET_API_VERSION: [u32; 3] = [0, 1, 0];
 
@@ -15,6 +15,21 @@ impl ArchivedBot {
             fn __harvest_resource(x: u32, y: u32) -> u32;
         }
         ActionError::wasm_to_rust(unsafe { __harvest_resource(x, y) }).unwrap()
+    }
+
+    pub fn deposit_resource(&self, x: u32, y: u32) -> Result<(), ActionError> {
+        extern "C" {
+            fn __deposit_resource(x: u32, y: u32) -> u32;
+        }
+        ActionError::wasm_to_rust(unsafe { __deposit_resource(x, y) }).unwrap()
+    }
+
+    pub fn withdraw_resource(&self, resource: Resource, x: u32, y: u32) -> Result<(), ActionError> {
+        extern "C" {
+            fn __withdraw_resource(resource: u32, x: u32, y: u32) -> u32;
+        }
+        ActionError::wasm_to_rust(unsafe { __withdraw_resource(resource.rust_to_wasm(), x, y) })
+            .unwrap()
     }
 
     pub fn move_along_path(&self, path: &mut Vec<(u32, u32)>) -> Result<(), ActionError> {
@@ -67,6 +82,28 @@ impl Direction {
             1 => Ok(Self::Down),
             2 => Ok(Self::Left),
             3 => Ok(Self::Right),
+            _ => Err(()),
+        }
+    }
+}
+
+#[doc(hidden)]
+impl Resource {
+    pub fn rust_to_wasm(&self) -> u32 {
+        match self {
+            Self::Copper => 0,
+            Self::Gold => 1,
+            Self::Silicon => 2,
+            Self::Plastic => 3,
+        }
+    }
+
+    pub fn wasm_to_rust(direction: u32) -> Result<Self, ()> {
+        match direction {
+            0 => Ok(Self::Copper),
+            1 => Ok(Self::Gold),
+            2 => Ok(Self::Silicon),
+            3 => Ok(Self::Plastic),
             _ => Err(()),
         }
     }

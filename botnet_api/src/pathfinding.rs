@@ -58,6 +58,14 @@ impl ArchivedBot {
     }
 }
 
+/// Goal function for finding an antenna with the same controller as the bot that is pathfinding.
+pub const ANTENNA: fn(u32, u32, &ArchivedBot, &ArchivedBay) -> bool = antenna_exists_at_position;
+fn antenna_exists_at_position(x: u32, y: u32, bot: &ArchivedBot, bay: &ArchivedBay) -> bool {
+    bay.get_entity_at_position(x, y)
+        .map(|entity| entity.is_antenna_controlled_by(bot.controller_id))
+        .unwrap_or(false)
+}
+
 /// Goal function for finding any resource.
 pub const RESOURCE: fn(u32, u32, &ArchivedBot, &ArchivedBay) -> bool = resource_exists_at_position;
 fn resource_exists_at_position(x: u32, y: u32, _bot: &ArchivedBot, bay: &ArchivedBay) -> bool {
