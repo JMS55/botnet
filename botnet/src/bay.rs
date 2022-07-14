@@ -5,7 +5,7 @@ use crate::replay::ReplayRecorder;
 use crate::wasm_context::WasmContext;
 use botnet_api::{Antenna, Bay, Bot, Entity, EntityID, Resource, BAY_SIZE};
 use extension_traits::extension;
-use log::{info, warn};
+use log::{info, trace, warn};
 use rand::{thread_rng, Rng};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -123,7 +123,7 @@ impl Bay {
 
                 match compute_bot_action(*bot_id, &self, player, wasm_context) {
                     Ok(bot_action) => {
-                        info!("Bot[{bot_id}] chose action {:?}", bot_action);
+                        trace!("Bot[{bot_id}] chose action {:?}", bot_action);
 
                         self.apply_bot_action(bay_id, *bot_id, bot_action, replay_recorder);
                     }
