@@ -3,7 +3,7 @@ use crate::compute_bot_action::compute_bot_action;
 use crate::game::Player;
 use crate::replay::ReplayRecorder;
 use crate::wasm_context::WasmContext;
-use botnet_api::{Bay, Bot, Entity, EntityID, Resource, BAY_SIZE};
+use botnet_api::{Antenna, Bay, Bot, Entity, EntityID, Resource, BAY_SIZE};
 use extension_traits::extension;
 use log::{info, warn};
 use rand::{thread_rng, Rng};
@@ -19,18 +19,37 @@ impl Bay {
         let mut cells = [[None; BAY_SIZE]; BAY_SIZE];
         let mut rng = thread_rng();
 
+        {
+            let entity_id = next_entity_id.fetch_add(1, Ordering::SeqCst);
+            let (x, y) = (rng.gen_range(0..BAY_SIZE), rng.gen_range(0..BAY_SIZE));
+            entities.insert(
+                entity_id,
+                (
+                    Entity::Antenna(Antenna {
+                        controller_id: test_player_id,
+                        stored_copper: 0,
+                        stored_gold: 0,
+                        stored_silicon: 0,
+                        stored_plastic: 0,
+                    }),
+                    x as u32,
+                    y as u32,
+                ),
+            );
+            cells[x][y] = Some(entity_id);
+        }
+
         for _ in 0..12 {
             loop {
                 let (x, y) = (rng.gen_range(0..BAY_SIZE), rng.gen_range(0..BAY_SIZE));
                 if cells[x][y] == None {
                     let entity_id = next_entity_id.fetch_add(1, Ordering::SeqCst);
-
                     entities.insert(
                         entity_id,
                         (
                             Entity::Bot(Bot {
-                                entity_id,
-                                player_id: test_player_id,
+                                id: entity_id,
+                                controller_id: test_player_id,
                                 energy: 1000,
                                 held_resource: None,
                                 x,
@@ -40,9 +59,7 @@ impl Bay {
                             y as u32,
                         ),
                     );
-
                     cells[x][y] = Some(entity_id);
-
                     break;
                 }
             }
@@ -53,14 +70,21 @@ impl Bay {
                 let (x, y) = (rng.gen_range(0..BAY_SIZE), rng.gen_range(0..BAY_SIZE));
                 if cells[x][y] == None {
                     let entity_id = next_entity_id.fetch_add(1, Ordering::SeqCst);
-
                     entities.insert(
                         entity_id,
-                        (Entity::Resource(Resource::Silicon), x as u32, y as u32),
+                        (
+                            Entity::Resource(match rng.gen_range(0..4) {
+                                0 => Resource::Copper,
+                                1 => Resource::Gold,
+                                2 => Resource::Silicon,
+                                3 => Resource::Plastic,
+                                _ => unreachable!(),
+                            }),
+                            x as u32,
+                            y as u32,
+                        ),
                     );
-
                     cells[x][y] = Some(entity_id);
-
                     break;
                 }
             }
@@ -95,7 +119,7 @@ impl Bay {
     ) {
         for bot_id in bot_ids {
             if let Some(bot) = self.get_bot(*bot_id) {
-                let player = &players.get(&bot.player_id).unwrap();
+                let player = &players.get(&bot.controller_id).unwrap();
 
                 match compute_bot_action(*bot_id, &self, player, wasm_context) {
                     Ok(bot_action) => {

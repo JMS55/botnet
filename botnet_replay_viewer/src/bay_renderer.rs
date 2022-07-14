@@ -1,13 +1,13 @@
 use crate::animation::Animation;
-use botnet_api::{Bay, Entity, EntityID, BAY_SIZE};
+use botnet_api::{Bay, Entity, EntityID, Resource, BAY_SIZE};
 use macroquad::prelude::{
-    clear_background, draw_circle, draw_texture_ex, rand, vec2, Color, Conf, DrawTextureParams,
-    Texture2D, Vec2,
+    clear_background, draw_circle, draw_texture_ex, get_time, rand, vec2, Color, Conf,
+    DrawTextureParams, Texture2D, Vec2,
 };
 use std::collections::HashMap;
-use std::f32::consts::TAU;
+use std::f32::consts::PI;
 
-pub const TILE_SIZE: u32 = 32;
+pub const TILE_SIZE: f32 = 32.0;
 
 pub fn window_conf() -> Conf {
     Conf {
@@ -22,7 +22,7 @@ pub fn window_conf() -> Conf {
 pub struct BayRenderer {
     pub animation: Option<Animation>,
     pub entity_render_parameters: HashMap<EntityID, EntityRenderParameters>,
-    textures: [Texture2D; 2],
+    textures: [Texture2D; 3],
 }
 
 pub struct EntityRenderParameters {
@@ -40,7 +40,9 @@ impl BayRenderer {
             include_bytes!("../assets/meteor_detailedLarge.png"),
             None,
         );
-        let textures = [bot_texture, resource_texture];
+        let antenna_texture =
+            Texture2D::from_file_with_format(include_bytes!("../assets/station_C.png"), None);
+        let textures = [bot_texture, resource_texture, antenna_texture];
 
         Self {
             animation: None,
@@ -113,8 +115,8 @@ impl BayRenderer {
         for x in 0..BAY_SIZE {
             for y in 0..BAY_SIZE {
                 draw_circle(
-                    (x + 1) as f32 * TILE_SIZE as f32,
-                    (y + 1) as f32 * TILE_SIZE as f32,
+                    (x + 1) as f32 * TILE_SIZE,
+                    (y + 1) as f32 * TILE_SIZE,
                     if x * y % 2 == 0 { 2.0 } else { 3.0 },
                     Color::from_rgba(44, 45, 42, 255),
                 );
@@ -124,19 +126,38 @@ impl BayRenderer {
 
     fn draw_entities(&mut self, bay: &Bay) {
         for (entity_id, entity) in &bay.entities {
-            match entity.0 {
-                Entity::Bot(_) => self.draw_entity(*entity_id, 0, (TILE_SIZE - 8) as f32, 0.0),
+            match &entity.0 {
+                Entity::Bot(bot) => {
+                    self.draw_entity(*entity_id, 0, TILE_SIZE - 8.0, 0.0, None);
+
+                    if let Some(resource) = bot.held_resource {
+                        self.draw_entity(
+                            *entity_id,
+                            0,
+                            TILE_SIZE - 18.0,
+                            0.0,
+                            Some(entity_color(&Entity::Resource(resource))),
+                        );
+                    }
+                }
+                Entity::Antenna(_) => self.draw_entity(
+                    *entity_id,
+                    2,
+                    TILE_SIZE,
+                    (get_time() / 3.0) as f32 % PI,
+                    None,
+                ),
+                Entity::Interconnect { .. } => todo!(),
                 Entity::Resource(_) => {
                     rand::srand(*entity_id);
                     self.draw_entity(
                         *entity_id,
                         1,
-                        TILE_SIZE as f32 - rand::gen_range(0.0, 6.0),
-                        rand::gen_range(0.0, TAU),
+                        TILE_SIZE - rand::gen_range(0.0, 6.0),
+                        rand::gen_range(0.0, PI),
+                        None,
                     );
                 }
-                Entity::Interconnect { .. } => todo!(),
-                Entity::Antenna { .. } => todo!(),
             }
         }
     }
@@ -147,18 +168,19 @@ impl BayRenderer {
         texture_index: usize,
         base_size: f32,
         base_rotation: f32,
+        color_override: Option<Color>,
     ) {
         let entity_render_parameters = self.entity_render_parameters.get(&entity_id).unwrap();
         let size = base_size * entity_render_parameters.scale;
-        let position = entity_render_parameters.position * Vec2::splat(TILE_SIZE as f32)
-            + Vec2::splat(TILE_SIZE as f32)
+        let position = entity_render_parameters.position * Vec2::splat(TILE_SIZE)
+            + Vec2::splat(TILE_SIZE)
             - (size / 2.0);
 
         draw_texture_ex(
             self.textures[texture_index],
             position.x,
             position.y,
-            entity_render_parameters.color,
+            color_override.unwrap_or(entity_render_parameters.color),
             DrawTextureParams {
                 dest_size: Some(size),
                 rotation: base_rotation + entity_render_parameters.rotation,
@@ -171,8 +193,13 @@ impl BayRenderer {
 fn entity_color(entity: &Entity) -> Color {
     match entity {
         Entity::Bot(_) => Color::from_rgba(180, 180, 180, 255),
-        Entity::Resource(_) => Color::from_rgba(96, 96, 96, 255),
+        Entity::Antenna(_) => Color::from_rgba(96, 31, 74, 255),
         Entity::Interconnect { .. } => todo!(),
-        Entity::Antenna { .. } => todo!(),
+        Entity::Resource(resource) => match resource {
+            Resource::Copper => Color::from_rgba(62, 62, 28, 255),
+            Resource::Gold => Color::from_rgba(96, 96, 40, 255),
+            Resource::Silicon => Color::from_rgba(90, 90, 90, 255),
+            Resource::Plastic => Color::from_rgba(150, 150, 150, 255),
+        },
     }
 }

@@ -27,27 +27,36 @@ pub type EntityID = u64;
 #[derive(Archive, Serialize, Deserialize, Clone)]
 pub enum Entity {
     Bot(Bot),
-    Resource(Resource),
+    Antenna(Antenna),
     Interconnect { next_bay_id: EntityID },
-    Antenna { controller_id: EntityID },
+    Resource(Resource),
 }
 
 #[derive(Archive, Serialize, Deserialize, Clone)]
 pub struct Bot {
-    pub entity_id: EntityID,
-    pub player_id: EntityID,
+    pub id: EntityID,
+    pub controller_id: EntityID,
     pub energy: u32,
     pub held_resource: Option<Resource>,
     pub x: usize,
     pub y: usize,
 }
 
-#[derive(Archive, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Archive, Serialize, Deserialize, Clone)]
+pub struct Antenna {
+    pub controller_id: EntityID,
+    pub stored_copper: u8,
+    pub stored_gold: u8,
+    pub stored_silicon: u8,
+    pub stored_plastic: u8,
+}
+
+#[derive(Archive, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
 #[archive(compare(PartialEq))]
+#[archive_attr(derive(Debug))]
 pub enum Resource {
-    Gold,
     Copper,
-    Platinum,
+    Gold,
     Silicon,
     Plastic,
 }
