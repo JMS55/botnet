@@ -17,7 +17,7 @@ Currently, the server is hardcoded to run several instances of the example bot.
 
 To run the server with logs enabled, first compile the example bot:
 
-`cargo build --release --manifest-path=example_bot/Cargo.toml`
+`cargo build --release --target wasm32-unknown-unknown --manifest-path=example_bot/Cargo.toml`
 
 and then compile and run the server:
 
