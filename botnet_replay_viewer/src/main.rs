@@ -11,6 +11,8 @@ use rkyv::{Deserialize, Infallible};
 use std::env;
 use std::fs::File;
 use std::io::{BufReader, Read};
+use std::sync::atomic::AtomicU64;
+use std::sync::Arc;
 
 #[macroquad::main(window_conf)]
 async fn main() {
@@ -43,6 +45,12 @@ async fn main() {
         _ => panic!("This replay is not compatible with this version of BotnetReplayViewer"),
     }
 
+    // Load initial next entity id
+    let next_entity_id = Arc::new(AtomicU64::new(match load_next_record() {
+        Some(ReplayRecord::InitialNextEntityID(initial_entity_id)) => initial_entity_id,
+        _ => unreachable!(),
+    }));
+
     // Load initial bay state
     let mut bay = match load_next_record() {
         Some(ReplayRecord::InitialBayState { bay, .. }) => *bay,
@@ -71,7 +79,11 @@ async fn main() {
 
         // Apply record when available and no animation is playing
         if current_record.is_some() && bay_renderer.animation.is_none() {
-            apply_record(current_record.take().unwrap(), &mut bay);
+            apply_record(
+                current_record.take().unwrap(),
+                &mut bay,
+                Arc::clone(&next_entity_id),
+            );
 
             bay_renderer.prepare(&bay);
         }
@@ -80,9 +92,10 @@ async fn main() {
     }
 }
 
-fn apply_record(record: ReplayRecord, bay: &mut Bay) {
+fn apply_record(record: ReplayRecord, bay: &mut Bay, next_entity_id: Arc<AtomicU64>) {
     match record {
         ReplayRecord::GameVersion { .. } => unreachable!(),
+        ReplayRecord::InitialNextEntityID { .. } => unreachable!(),
         ReplayRecord::InitialBayState { .. } => unreachable!(),
         ReplayRecord::TickStart => {}
         ReplayRecord::BotAction {
@@ -90,7 +103,7 @@ fn apply_record(record: ReplayRecord, bay: &mut Bay) {
             bot_id,
             bot_action,
         } => {
-            bay.apply_bot_action(bay_id, bot_id, bot_action, None);
+            bay.apply_bot_action(bay_id, bot_id, bot_action, next_entity_id, None);
         }
         ReplayRecord::RechargeBots { bay_id, bot_ids } => {
             bay.recharge_bots(bay_id, &bot_ids, None);

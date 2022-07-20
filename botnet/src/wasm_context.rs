@@ -64,6 +64,7 @@ fn setup_linker<'a>(engine: Engine) -> Result<Linker<StoreData<'a>>, Box<dyn Err
     export_harvest_resource(&mut linker)?;
     export_deposit_resource(&mut linker)?;
     export_withdraw_resource(&mut linker)?;
+    export_build_entity(&mut linker)?;
 
     export_log_debug(&mut linker)?;
 

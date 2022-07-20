@@ -14,8 +14,8 @@ use wasmtime::Module;
 pub struct Game<'a> {
     players: HashMap<EntityID, Player>,
     bays: Vec<Bay>,
-    wasm_engine: WasmContext<'a>,
     next_entity_id: Arc<AtomicU64>,
+    wasm_engine: WasmContext<'a>,
     replay_recorder: Option<ReplayRecorder>,
 }
 
@@ -55,14 +55,15 @@ impl Game<'_> {
                     .enumerate()
                     .map(|(entity_id, bay)| (entity_id as EntityID, bay))
                     .collect::<Box<[_]>>(),
+                next_entity_id.load(Ordering::SeqCst),
             )
         });
 
         Ok(Self {
             players,
             bays,
-            wasm_engine,
             next_entity_id,
+            wasm_engine,
             replay_recorder,
         })
     }
@@ -82,6 +83,7 @@ impl Game<'_> {
                 bay.tick(
                     bay_id as EntityID,
                     &self.players,
+                    Arc::clone(&self.next_entity_id),
                     &self.wasm_engine,
                     self.replay_recorder.as_ref(),
                 );

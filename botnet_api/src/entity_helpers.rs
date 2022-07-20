@@ -1,6 +1,7 @@
 use crate::{
-    Antenna, ArchivedAntenna, ArchivedBay, ArchivedBot, ArchivedEntity, ArchivedResource, Bay, Bot,
-    Entity, EntityID, Resource, BAY_SIZE,
+    Antenna, ArchivedAntenna, ArchivedBay, ArchivedBot, ArchivedEntity, ArchivedPartialEntity,
+    ArchivedResource, Bay, Bot, Entity, EntityID, PartialEntity, PartialEntityType, Resource,
+    BAY_SIZE,
 };
 
 impl Entity {
@@ -45,6 +46,22 @@ impl Entity {
             _ => unreachable!(),
         }
     }
+
+    pub fn is_partial_entity_of_type(&self, partial_entity_type: PartialEntityType) -> bool {
+        match self {
+            Self::PartialEntity(PartialEntity { entity_type, .. }) => {
+                *entity_type == partial_entity_type
+            }
+            _ => false,
+        }
+    }
+
+    pub fn unwrap_as_partial_entity(&self) -> &PartialEntity {
+        match self {
+            Self::PartialEntity(partial_entity) => partial_entity,
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl ArchivedEntity {
@@ -79,6 +96,22 @@ impl ArchivedEntity {
     pub fn unwrap_as_resource(&self) -> &ArchivedResource {
         match self {
             Self::Resource(resource) => resource,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn is_partial_entity_of_type(&self, partial_entity_type: PartialEntityType) -> bool {
+        match self {
+            Self::PartialEntity(ArchivedPartialEntity { entity_type, .. }) => {
+                *entity_type == partial_entity_type
+            }
+            _ => false,
+        }
+    }
+
+    pub fn unwrap_as_partial_entity(&self) -> &ArchivedPartialEntity {
+        match self {
+            Self::PartialEntity(partial_entity) => partial_entity,
             _ => unreachable!(),
         }
     }
@@ -147,6 +180,28 @@ impl ArchivedBay {
         match self.entities.get(&entity_id) {
             Some((ArchivedEntity::Bot(bot), _, _)) => Some(bot),
             _ => None,
+        }
+    }
+}
+
+impl PartialEntity {
+    pub fn needs_resource(&self, resource: Resource) -> bool {
+        match resource {
+            Resource::Copper => self.contributed_copper != self.required_copper,
+            Resource::Gold => self.contributed_gold != self.required_gold,
+            Resource::Silicon => self.contributed_silicon != self.required_silicon,
+            Resource::Plastic => self.contributed_plastic != self.required_plastic,
+        }
+    }
+}
+
+impl ArchivedPartialEntity {
+    pub fn needs_resource(&self, resource: &ArchivedResource) -> bool {
+        match resource {
+            ArchivedResource::Copper => self.contributed_copper != self.required_copper,
+            ArchivedResource::Gold => self.contributed_gold != self.required_gold,
+            ArchivedResource::Silicon => self.contributed_silicon != self.required_silicon,
+            ArchivedResource::Plastic => self.contributed_plastic != self.required_plastic,
         }
     }
 }

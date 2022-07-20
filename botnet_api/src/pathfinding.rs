@@ -1,16 +1,16 @@
-use crate::{ArchivedBay, ArchivedBot, ArchivedEntity, BAY_SIZE};
+use crate::{ArchivedBay, ArchivedBot, ArchivedEntity, PartialEntityType, BAY_SIZE};
 use std::collections::{HashMap, VecDeque};
+
+pub trait GoalFunction: Fn(u32, u32, &ArchivedBot, &ArchivedBay) -> bool {}
+impl<T: Fn(u32, u32, &ArchivedBot, &ArchivedBay) -> bool> GoalFunction for T {}
 
 impl ArchivedBot {
     /// Find a path to the nearest cell that satisfies a goal function.
-    pub fn find_path_to<'a, F>(
-        &'a self,
+    pub fn find_path_to<F: GoalFunction>(
+        &self,
         goal_function: F,
-        bay: &'a ArchivedBay,
-    ) -> Option<Vec<(u32, u32)>>
-    where
-        F: Fn(u32, u32, &'a ArchivedBot, &'a ArchivedBay) -> bool,
-    {
+        bay: &ArchivedBay,
+    ) -> Option<Vec<(u32, u32)>> {
         let mut frontier = VecDeque::new();
         let mut came_from: HashMap<(u32, u32), (u32, u32)> = HashMap::new();
         frontier.push_back((self.x, self.y));
@@ -58,20 +58,36 @@ impl ArchivedBot {
     }
 }
 
+/// Goal function for finding a certain position.
+#[allow(non_snake_case)]
+pub fn POSITION(x: u32, y: u32) -> impl GoalFunction {
+    move |x2: u32, y2: u32, _bot: &ArchivedBot, _bay: &ArchivedBay| x2 == x && y2 == y
+}
+
 /// Goal function for finding an antenna with the same controller as the bot that is pathfinding.
-pub const ANTENNA: fn(u32, u32, &ArchivedBot, &ArchivedBay) -> bool = antenna_exists_at_position;
-fn antenna_exists_at_position(x: u32, y: u32, bot: &ArchivedBot, bay: &ArchivedBay) -> bool {
+#[allow(non_snake_case)]
+pub fn ANTENNA(x: u32, y: u32, bot: &ArchivedBot, bay: &ArchivedBay) -> bool {
     bay.get_entity_at_position(x, y)
         .map(|entity| entity.is_antenna_controlled_by(bot.controller_id))
         .unwrap_or(false)
 }
 
 /// Goal function for finding any resource.
-pub const RESOURCE: fn(u32, u32, &ArchivedBot, &ArchivedBay) -> bool = resource_exists_at_position;
-fn resource_exists_at_position(x: u32, y: u32, _bot: &ArchivedBot, bay: &ArchivedBay) -> bool {
+#[allow(non_snake_case)]
+pub fn RESOURCE(x: u32, y: u32, _bot: &ArchivedBot, bay: &ArchivedBay) -> bool {
     bay.get_entity_at_position(x, y)
         .map(ArchivedEntity::is_resource)
         .unwrap_or(false)
+}
+
+/// Goal function for finding a partial entity of a certain type.
+#[allow(non_snake_case)]
+pub fn PARTIAL_ENTITY(partial_entity_type: PartialEntityType) -> impl GoalFunction {
+    move |x: u32, y: u32, _bot: &ArchivedBot, bay: &ArchivedBay| {
+        bay.get_entity_at_position(x, y)
+            .map(|entity| entity.is_partial_entity_of_type(partial_entity_type))
+            .unwrap_or(false)
+    }
 }
 
 fn empty_neighbors((x, y): (u32, u32), bay: &ArchivedBay) -> [Option<(u32, u32)>; 4] {

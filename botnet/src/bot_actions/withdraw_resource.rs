@@ -77,7 +77,7 @@ pub fn apply_bot_withdraw_resource(
         Resource::Plastic => antenna.stored_plastic -= 1,
     }
 
-    let bot = &mut bay.get_bot_mut(bot_id).unwrap();
+    let bot = bay.get_bot_mut(bot_id).unwrap();
     bot.held_resource = Some(resource);
     bot.energy -= ENERGY_REQUIRED;
 }

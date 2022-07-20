@@ -111,7 +111,7 @@ pub fn animation_for_bot_action(
             )
         }
 
-        BotAction::DepositResource { x, y } => {
+        BotAction::DepositResource { x, y } | BotAction::BuildEntity { x, y, .. } => {
             let position_offset = ((bot.x as i32 - *x as i32), (bot.y as i32 - *y as i32));
             let rotation = Some(match position_offset {
                 (1, 0) => -(PI / 2.0),

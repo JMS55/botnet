@@ -1,4 +1,4 @@
-use crate::{ActionError, ArchivedBot, Direction, Resource};
+use crate::{ActionError, ArchivedBot, Direction, PartialEntityType, Resource};
 
 pub const BOTNET_API_VERSION: [u32; 3] = [0, 1, 0];
 
@@ -32,6 +32,19 @@ impl ArchivedBot {
             .unwrap()
     }
 
+    pub fn build_entity(
+        &self,
+        entity_type: PartialEntityType,
+        x: u32,
+        y: u32,
+    ) -> Result<(), ActionError> {
+        extern "C" {
+            fn __build_entity(entity_type: u32, x: u32, y: u32) -> u32;
+        }
+        ActionError::wasm_to_rust(unsafe { __build_entity(entity_type.rust_to_wasm(), x, y) })
+            .unwrap()
+    }
+
     pub fn move_along_path(&self, path: &mut Vec<(u32, u32)>) -> Result<(), ActionError> {
         match path.last().copied() {
             Some((x, y)) => {
@@ -62,6 +75,28 @@ pub fn log_debug(message: &str) {
     }
     unsafe {
         __log_debug(message.as_ptr() as u32, message.len() as u32);
+    }
+}
+
+#[doc(hidden)]
+impl ActionError {
+    pub fn rust_to_wasm(result: Result<(), Self>) -> u32 {
+        match result {
+            Ok(()) => 0,
+            Err(Self::ActionNotPossible) => 1,
+            Err(Self::NotEnoughEnergy) => 2,
+            Err(Self::AlreadyActed) => 3,
+        }
+    }
+
+    pub fn wasm_to_rust(result: u32) -> Result<Result<(), Self>, ()> {
+        match result {
+            0 => Ok(Ok(())),
+            1 => Ok(Err(Self::ActionNotPossible)),
+            2 => Ok(Err(Self::NotEnoughEnergy)),
+            3 => Ok(Err(Self::AlreadyActed)),
+            _ => Err(()),
+        }
     }
 }
 
@@ -110,22 +145,17 @@ impl Resource {
 }
 
 #[doc(hidden)]
-impl ActionError {
-    pub fn rust_to_wasm(result: Result<(), Self>) -> u32 {
-        match result {
-            Ok(()) => 0,
-            Err(Self::ActionNotPossible) => 1,
-            Err(Self::NotEnoughEnergy) => 2,
-            Err(Self::AlreadyActed) => 3,
+impl PartialEntityType {
+    pub fn rust_to_wasm(&self) -> u32 {
+        match self {
+            Self::Antenna => 0,
         }
     }
 
-    pub fn wasm_to_rust(result: u32) -> Result<Result<(), Self>, ()> {
-        match result {
-            0 => Ok(Ok(())),
-            1 => Ok(Err(Self::ActionNotPossible)),
-            2 => Ok(Err(Self::NotEnoughEnergy)),
-            3 => Ok(Err(Self::AlreadyActed)),
+    pub fn wasm_to_rust(direction: u32) -> Result<Self, ()> {
+        match direction {
+            0 => Ok(Self::Antenna),
+
             _ => Err(()),
         }
     }

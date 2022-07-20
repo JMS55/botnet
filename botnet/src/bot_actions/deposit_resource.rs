@@ -54,7 +54,7 @@ fn bot_can_deposit_resource(bot: &Bot, x: u32, y: u32, bay: &Bay) -> Result<(), 
 }
 
 pub fn apply_bot_deposit_resource(bay: &mut Bay, bot_id: EntityID, x: u32, y: u32) {
-    let bot = &mut bay.get_bot_mut(bot_id).unwrap();
+    let bot = bay.get_bot_mut(bot_id).unwrap();
     let bot_resource = bot.held_resource.take();
     bot.energy -= ENERGY_REQUIRED;
 

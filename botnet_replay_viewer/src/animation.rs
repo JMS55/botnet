@@ -35,6 +35,7 @@ impl Animation {
     ) -> Option<Self> {
         match record {
             ReplayRecord::GameVersion(..) => unreachable!(),
+            ReplayRecord::InitialNextEntityID { .. } => unreachable!(),
             ReplayRecord::InitialBayState { .. } => unreachable!(),
             ReplayRecord::TickStart => None,
             ReplayRecord::BotAction {

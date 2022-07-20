@@ -1,5 +1,5 @@
 use crate::animation::Animation;
-use botnet_api::{Bay, Entity, EntityID, Resource, BAY_SIZE};
+use botnet_api::{Bay, Entity, EntityID, PartialEntity, PartialEntityType, Resource, BAY_SIZE};
 use macroquad::prelude::{
     clear_background, draw_circle, draw_texture_ex, get_time, rand, vec2, Color, Conf,
     DrawTextureParams, Texture2D, Vec2,
@@ -35,7 +35,7 @@ pub struct EntityRenderParameters {
 impl BayRenderer {
     pub fn new() -> Self {
         let bot_texture =
-            Texture2D::from_file_with_format(include_bytes!("../assets/ship_E.png"), None);
+            Texture2D::from_file_with_format(include_bytes!("../assets/ship_E32.png"), None);
         let resource_texture = Texture2D::from_file_with_format(
             include_bytes!("../assets/meteor_detailedLarge.png"),
             None,
@@ -162,6 +162,11 @@ impl BayRenderer {
                         None,
                     );
                 }
+                Entity::PartialEntity(PartialEntity { entity_type, .. }) => match entity_type {
+                    PartialEntityType::Antenna => {
+                        self.draw_entity(*entity_id, 2, TILE_SIZE, 0.0, None);
+                    }
+                },
             }
         }
     }
@@ -205,5 +210,6 @@ fn entity_color(entity: &Entity) -> Color {
             Resource::Silicon => Color::from_rgba(133, 83, 149, 255),
             Resource::Plastic => Color::from_rgba(69, 147, 165, 255),
         },
+        Entity::PartialEntity(_) => Color::from_rgba(133, 218, 235, 100),
     }
 }

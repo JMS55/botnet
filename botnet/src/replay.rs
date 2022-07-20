@@ -17,6 +17,7 @@ pub struct ReplayRecorder {
 #[derive(Archive, Serialize, Deserialize)]
 pub enum ReplayRecord {
     GameVersion(Box<str>),
+    InitialNextEntityID(u64),
     InitialBayState {
         bay_id: EntityID,
         bay: Box<Bay>,
@@ -34,7 +35,7 @@ pub enum ReplayRecord {
 }
 
 impl ReplayRecorder {
-    pub fn new(initial_bays: &[(EntityID, &Bay)]) -> Self {
+    pub fn new(initial_bays: &[(EntityID, &Bay)], initial_next_entity_id: u64) -> Self {
         let (recording_sender, record_receiver) = bounded_channel(RECORDING_QUEUE_MESSAGE_LIMIT);
 
         // Start a background thread to take care of writing ReplayRecords to a file
@@ -64,6 +65,7 @@ impl ReplayRecorder {
         };
 
         this.record_game_version();
+        this.record_initial_next_entity_id(initial_next_entity_id);
         this.record_initial_bay_states(initial_bays);
 
         this
@@ -73,6 +75,12 @@ impl ReplayRecorder {
         let game_version = env!("CARGO_PKG_VERSION").into();
         self.record_sender
             .send(ReplayRecord::GameVersion(game_version))
+            .unwrap();
+    }
+
+    fn record_initial_next_entity_id(&self, initial_next_entity_id: u64) {
+        self.record_sender
+            .send(ReplayRecord::InitialNextEntityID(initial_next_entity_id))
             .unwrap();
     }
 

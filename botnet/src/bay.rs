@@ -3,7 +3,7 @@ use crate::compute_bot_action::compute_bot_action;
 use crate::game::Player;
 use crate::replay::ReplayRecorder;
 use crate::wasm_context::WasmContext;
-use botnet_api::{Antenna, Bay, Bot, Entity, EntityID, Resource, BAY_SIZE};
+use botnet_api::{Bay, Bot, Entity, EntityID, Resource, BAY_SIZE};
 use extension_traits::extension;
 use log::{info, trace, warn};
 use rand::{thread_rng, Rng};
@@ -18,26 +18,6 @@ impl Bay {
         let mut entities = HashMap::new();
         let mut cells = [[None; BAY_SIZE]; BAY_SIZE];
         let mut rng = thread_rng();
-
-        {
-            let entity_id = next_entity_id.fetch_add(1, Ordering::SeqCst);
-            let (x, y) = (rng.gen_range(0..BAY_SIZE), rng.gen_range(0..BAY_SIZE));
-            entities.insert(
-                entity_id,
-                (
-                    Entity::Antenna(Antenna {
-                        controller_id: test_player_id,
-                        stored_copper: 0,
-                        stored_gold: 0,
-                        stored_silicon: 0,
-                        stored_plastic: 0,
-                    }),
-                    x as u32,
-                    y as u32,
-                ),
-            );
-            cells[x][y] = Some(entity_id);
-        }
 
         for _ in 0..12 {
             loop {
@@ -90,7 +70,11 @@ impl Bay {
             }
         }
 
-        Self { entities, cells }
+        Self {
+            entities,
+            cells,
+            controller_id: None,
+        }
     }
 
     /// Update the bay.
@@ -98,13 +82,21 @@ impl Bay {
         &mut self,
         bay_id: EntityID,
         players: &HashMap<EntityID, Player>,
+        next_entity_id: Arc<AtomicU64>,
         wasm_context: &WasmContext,
         replay_recorder: Option<&ReplayRecorder>,
     ) {
         info!("Bay[{bay_id}] starting tick");
         let bot_ids = self.get_bot_ids();
 
-        self.tick_bots(bay_id, &bot_ids, players, wasm_context, replay_recorder);
+        self.tick_bots(
+            bay_id,
+            &bot_ids,
+            players,
+            next_entity_id,
+            wasm_context,
+            replay_recorder,
+        );
         self.recharge_bots(bay_id, &bot_ids, replay_recorder);
     }
 
@@ -114,6 +106,7 @@ impl Bay {
         bay_id: EntityID,
         bot_ids: &[EntityID],
         players: &HashMap<EntityID, Player>,
+        next_entity_id: Arc<AtomicU64>,
         wasm_context: &WasmContext,
         replay_recorder: Option<&ReplayRecorder>,
     ) {
@@ -129,7 +122,13 @@ impl Bay {
                             script_duration
                         );
 
-                        self.apply_bot_action(bay_id, *bot_id, bot_action, replay_recorder);
+                        self.apply_bot_action(
+                            bay_id,
+                            *bot_id,
+                            bot_action,
+                            Arc::clone(&next_entity_id),
+                            replay_recorder,
+                        );
                     }
                     result => {
                         warn!("Bot[{bot_id}] did not choose an action: {:?}", result);
@@ -162,6 +161,7 @@ impl Bay {
         bay_id: EntityID,
         bot_id: EntityID,
         bot_action: BotAction,
+        next_entity_id: Arc<AtomicU64>,
         replay_recorder: Option<&ReplayRecorder>,
     ) {
         match bot_action {
@@ -170,6 +170,9 @@ impl Bay {
             BotAction::DepositResource { x, y } => apply_bot_deposit_resource(self, bot_id, x, y),
             BotAction::WithdrawResource { resource, x, y } => {
                 apply_bot_withdraw_resource(self, bot_id, resource, x, y)
+            }
+            BotAction::BuildEntity { entity_type, x, y } => {
+                apply_bot_build_entity(self, bot_id, entity_type, x, y, next_entity_id)
             }
         }
 
