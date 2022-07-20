@@ -9,12 +9,11 @@ use log::{info, trace, warn};
 use rand::{thread_rng, Rng};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
 
 /// Methods for creating and updating a [`botnet_api::Bay`].
 #[extension(pub trait BayExt)]
 impl Bay {
-    fn new(next_entity_id: Arc<AtomicU64>, test_player_id: EntityID) -> Self {
+    fn new(next_entity_id: &AtomicU64, test_player_id: EntityID) -> Self {
         let mut entities = HashMap::new();
         let mut cells = [[None; BAY_SIZE]; BAY_SIZE];
         let mut rng = thread_rng();
@@ -82,7 +81,7 @@ impl Bay {
         &mut self,
         bay_id: EntityID,
         players: &HashMap<EntityID, Player>,
-        next_entity_id: Arc<AtomicU64>,
+        next_entity_id: &AtomicU64,
         wasm_context: &WasmContext,
         replay_recorder: Option<&ReplayRecorder>,
     ) {
@@ -106,7 +105,7 @@ impl Bay {
         bay_id: EntityID,
         bot_ids: &[EntityID],
         players: &HashMap<EntityID, Player>,
-        next_entity_id: Arc<AtomicU64>,
+        next_entity_id: &AtomicU64,
         wasm_context: &WasmContext,
         replay_recorder: Option<&ReplayRecorder>,
     ) {
@@ -126,7 +125,7 @@ impl Bay {
                             bay_id,
                             *bot_id,
                             bot_action,
-                            Arc::clone(&next_entity_id),
+                            next_entity_id,
                             replay_recorder,
                         );
                     }
@@ -161,7 +160,7 @@ impl Bay {
         bay_id: EntityID,
         bot_id: EntityID,
         bot_action: BotAction,
-        next_entity_id: Arc<AtomicU64>,
+        next_entity_id: &AtomicU64,
         replay_recorder: Option<&ReplayRecorder>,
     ) {
         match bot_action {

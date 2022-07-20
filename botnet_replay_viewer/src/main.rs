@@ -12,7 +12,6 @@ use std::env;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::sync::atomic::AtomicU64;
-use std::sync::Arc;
 
 #[macroquad::main(window_conf)]
 async fn main() {
@@ -46,10 +45,10 @@ async fn main() {
     }
 
     // Load initial next entity id
-    let next_entity_id = Arc::new(AtomicU64::new(match load_next_record() {
+    let next_entity_id = AtomicU64::new(match load_next_record() {
         Some(ReplayRecord::InitialNextEntityID(initial_entity_id)) => initial_entity_id,
         _ => unreachable!(),
-    }));
+    });
 
     // Load initial bay state
     let mut bay = match load_next_record() {
@@ -79,11 +78,7 @@ async fn main() {
 
         // Apply record when available and no animation is playing
         if current_record.is_some() && bay_renderer.animation.is_none() {
-            apply_record(
-                current_record.take().unwrap(),
-                &mut bay,
-                Arc::clone(&next_entity_id),
-            );
+            apply_record(current_record.take().unwrap(), &mut bay, &next_entity_id);
 
             bay_renderer.prepare(&bay);
         }
@@ -92,7 +87,7 @@ async fn main() {
     }
 }
 
-fn apply_record(record: ReplayRecord, bay: &mut Bay, next_entity_id: Arc<AtomicU64>) {
+fn apply_record(record: ReplayRecord, bay: &mut Bay, next_entity_id: &AtomicU64) {
     match record {
         ReplayRecord::GameVersion { .. } => unreachable!(),
         ReplayRecord::InitialNextEntityID { .. } => unreachable!(),

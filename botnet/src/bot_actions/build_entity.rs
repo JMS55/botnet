@@ -6,7 +6,6 @@ use botnet_api::{
 };
 use std::error::Error;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
 use wasmtime::{Caller, Linker};
 
 const ENERGY_REQUIRED: u32 = 30;
@@ -66,7 +65,7 @@ pub fn apply_bot_build_entity(
     entity_type: PartialEntityType,
     x: u32,
     y: u32,
-    next_entity_id: Arc<AtomicU64>,
+    next_entity_id: &AtomicU64,
 ) {
     let bot = bay.get_bot_mut(bot_id).unwrap();
     let bot_controller_id = bot.controller_id;

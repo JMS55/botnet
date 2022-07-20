@@ -14,7 +14,7 @@ use wasmtime::Module;
 pub struct Game<'a> {
     players: HashMap<EntityID, Player>,
     bays: Vec<Bay>,
-    next_entity_id: Arc<AtomicU64>,
+    next_entity_id: AtomicU64,
     wasm_engine: WasmContext<'a>,
     replay_recorder: Option<ReplayRecorder>,
 }
@@ -28,7 +28,7 @@ impl Game<'_> {
     pub fn new(record_replay: bool) -> Result<Self, Box<dyn Error>> {
         let wasm_engine = WasmContext::new()?;
 
-        let next_entity_id = Arc::new(AtomicU64::new(0));
+        let next_entity_id = AtomicU64::new(0);
 
         let mut players = HashMap::new();
         let test_player_id = next_entity_id.fetch_add(1, Ordering::SeqCst);
@@ -46,7 +46,7 @@ impl Game<'_> {
             },
         );
 
-        let bays = vec![Bay::new(Arc::clone(&next_entity_id), test_player_id)];
+        let bays = vec![Bay::new(&next_entity_id, test_player_id)];
 
         let replay_recorder = record_replay.then(|| {
             ReplayRecorder::new(
@@ -83,7 +83,7 @@ impl Game<'_> {
                 bay.tick(
                     bay_id as EntityID,
                     &self.players,
-                    Arc::clone(&self.next_entity_id),
+                    &self.next_entity_id,
                     &self.wasm_engine,
                     self.replay_recorder.as_ref(),
                 );
