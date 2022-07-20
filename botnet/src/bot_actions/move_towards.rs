@@ -1,14 +1,13 @@
 use crate::bot_actions::BotAction;
+use crate::config::BOT_ACTION_MOVE_TOWARDS_ENERGY_REQUIRED;
 use crate::wasm_context::StoreData;
 use botnet_api::{ActionError, Bay, Bot, Direction, EntityID, BAY_SIZE};
 use std::error::Error;
 use wasmtime::{Caller, Linker};
 
-const ENERGY_REQUIRED: u32 = 10;
-
 fn bot_can_move_towards(bot: &Bot, direction: Direction, bay: &Bay) -> Result<(), ActionError> {
     // Check if the bot has enough energy
-    if bot.energy < ENERGY_REQUIRED {
+    if bot.energy < BOT_ACTION_MOVE_TOWARDS_ENERGY_REQUIRED {
         return Err(ActionError::NotEnoughEnergy);
     }
 
@@ -40,7 +39,7 @@ pub fn apply_bot_move_towards(bay: &mut Bay, bot_id: EntityID, direction: Direct
     };
 
     (bot.x, bot.y) = (new_x, new_y);
-    bot.energy -= ENERGY_REQUIRED;
+    bot.energy -= BOT_ACTION_MOVE_TOWARDS_ENERGY_REQUIRED;
 
     bay.cells[old_x][old_y] = None;
     bay.cells[new_x][new_y] = Some(bot_id);

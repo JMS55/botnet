@@ -1,5 +1,6 @@
 use crate::bot_actions::*;
 use crate::compute_bot_action::compute_bot_action;
+use crate::config::{BOT_ENERGY_PER_RECHARGE, INITIAL_BOT_ENERGY};
 use crate::game::Player;
 use crate::replay::ReplayRecorder;
 use crate::wasm_context::WasmContext;
@@ -29,7 +30,7 @@ impl Bay {
                             Entity::Bot(Bot {
                                 id: entity_id,
                                 controller_id: test_player_id,
-                                energy: 1000,
+                                energy: INITIAL_BOT_ENERGY,
                                 held_resource: None,
                                 x,
                                 y,
@@ -146,7 +147,7 @@ impl Bay {
     ) {
         for bot_id in bot_ids {
             if let Some(bot) = self.get_bot_mut(*bot_id) {
-                bot.energy += 5;
+                bot.energy += BOT_ENERGY_PER_RECHARGE;
             }
         }
 

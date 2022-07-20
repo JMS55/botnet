@@ -1,10 +1,9 @@
 use crate::bot_actions::BotAction;
+use crate::config::BOT_ACTION_WIDTHDRAW_RESOURCE_ENERGY_REQUIRED;
 use crate::wasm_context::StoreData;
 use botnet_api::{ActionError, Bay, Bot, EntityID, Resource};
 use std::error::Error;
 use wasmtime::{Caller, Linker};
-
-const ENERGY_REQUIRED: u32 = 10;
 
 fn bot_can_withdraw_resource(
     bot: &Bot,
@@ -14,7 +13,7 @@ fn bot_can_withdraw_resource(
     bay: &Bay,
 ) -> Result<(), ActionError> {
     // Check if the bot has enough energy
-    if bot.energy < ENERGY_REQUIRED {
+    if bot.energy < BOT_ACTION_WIDTHDRAW_RESOURCE_ENERGY_REQUIRED {
         return Err(ActionError::NotEnoughEnergy);
     }
 
@@ -79,7 +78,7 @@ pub fn apply_bot_withdraw_resource(
 
     let bot = bay.get_bot_mut(bot_id).unwrap();
     bot.held_resource = Some(resource);
-    bot.energy -= ENERGY_REQUIRED;
+    bot.energy -= BOT_ACTION_WIDTHDRAW_RESOURCE_ENERGY_REQUIRED;
 }
 
 pub fn export_withdraw_resource(linker: &mut Linker<StoreData>) -> Result<(), Box<dyn Error>> {

@@ -1,4 +1,5 @@
 use crate::bot_actions::BotAction;
+use crate::config::BOT_ACTION_BUILD_ENTITY_ENERGY_REQUIRED;
 use crate::partial_entity::{PartialEntityExt, PartialEntityTypeExt};
 use crate::wasm_context::StoreData;
 use botnet_api::{
@@ -8,8 +9,6 @@ use std::error::Error;
 use std::sync::atomic::{AtomicU64, Ordering};
 use wasmtime::{Caller, Linker};
 
-const ENERGY_REQUIRED: u32 = 30;
-
 fn bot_can_build_entity(
     bot: &Bot,
     entity_type: PartialEntityType,
@@ -18,7 +17,7 @@ fn bot_can_build_entity(
     bay: &Bay,
 ) -> Result<(), ActionError> {
     // Check if the bot has enough energy
-    if bot.energy < ENERGY_REQUIRED {
+    if bot.energy < BOT_ACTION_BUILD_ENTITY_ENERGY_REQUIRED {
         return Err(ActionError::NotEnoughEnergy);
     }
 
@@ -70,7 +69,7 @@ pub fn apply_bot_build_entity(
     let bot = bay.get_bot_mut(bot_id).unwrap();
     let bot_controller_id = bot.controller_id;
     let bot_held_resource = bot.held_resource.take().unwrap();
-    bot.energy -= ENERGY_REQUIRED;
+    bot.energy -= BOT_ACTION_BUILD_ENTITY_ENERGY_REQUIRED;
 
     match bay.get_mut_entity_at_position(x, y) {
         Some(Entity::PartialEntity(partial_entity)) => match bot_held_resource {

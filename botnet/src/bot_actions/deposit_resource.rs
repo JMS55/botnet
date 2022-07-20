@@ -1,14 +1,13 @@
 use crate::bot_actions::BotAction;
+use crate::config::BOT_ACTION_DEPOSIT_RESOURCE_ENERGY_REQUIRED;
 use crate::wasm_context::StoreData;
 use botnet_api::{ActionError, Bay, Bot, EntityID, Resource};
 use std::error::Error;
 use wasmtime::{Caller, Linker};
 
-const ENERGY_REQUIRED: u32 = 5;
-
 fn bot_can_deposit_resource(bot: &Bot, x: u32, y: u32, bay: &Bay) -> Result<(), ActionError> {
     // Check if the bot has enough energy
-    if bot.energy < ENERGY_REQUIRED {
+    if bot.energy < BOT_ACTION_DEPOSIT_RESOURCE_ENERGY_REQUIRED {
         return Err(ActionError::NotEnoughEnergy);
     }
 
@@ -56,7 +55,7 @@ fn bot_can_deposit_resource(bot: &Bot, x: u32, y: u32, bay: &Bay) -> Result<(), 
 pub fn apply_bot_deposit_resource(bay: &mut Bay, bot_id: EntityID, x: u32, y: u32) {
     let bot = bay.get_bot_mut(bot_id).unwrap();
     let bot_resource = bot.held_resource.take();
-    bot.energy -= ENERGY_REQUIRED;
+    bot.energy -= BOT_ACTION_DEPOSIT_RESOURCE_ENERGY_REQUIRED;
 
     let antenna = bay
         .get_mut_entity_at_position(x, y)

@@ -1,14 +1,13 @@
 use crate::bot_actions::BotAction;
+use crate::config::BOT_ACTION_HARVEST_RESOURCE_ENERGY_REQUIRED;
 use crate::wasm_context::StoreData;
 use botnet_api::{ActionError, Bay, Bot, Entity, EntityID};
 use std::error::Error;
 use wasmtime::{Caller, Linker};
 
-const ENERGY_REQUIRED: u32 = 30;
-
 fn bot_can_harvest_resource(bot: &Bot, x: u32, y: u32, bay: &Bay) -> Result<(), ActionError> {
     // Check if the bot has enough energy
-    if bot.energy < ENERGY_REQUIRED {
+    if bot.energy < BOT_ACTION_HARVEST_RESOURCE_ENERGY_REQUIRED {
         return Err(ActionError::NotEnoughEnergy);
     }
 
@@ -49,7 +48,7 @@ pub fn apply_bot_harvest_resource(bay: &mut Bay, bot_id: EntityID, x: u32, y: u3
 
     let bot = bay.get_bot_mut(bot_id).unwrap();
     bot.held_resource = Some(resource);
-    bot.energy -= ENERGY_REQUIRED;
+    bot.energy -= BOT_ACTION_HARVEST_RESOURCE_ENERGY_REQUIRED;
 }
 
 pub fn export_harvest_resource(linker: &mut Linker<StoreData>) -> Result<(), Box<dyn Error>> {
