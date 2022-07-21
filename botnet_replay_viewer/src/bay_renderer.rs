@@ -34,14 +34,18 @@ pub struct EntityRenderParameters {
 
 impl BayRenderer {
     pub fn new() -> Self {
-        let bot_texture =
-            Texture2D::from_file_with_format(include_bytes!("../assets/ship_E32.png"), None);
-        let resource_texture = Texture2D::from_file_with_format(
-            include_bytes!("../assets/meteor_detailedLarge.png"),
+        let bot_texture = Texture2D::from_file_with_format(
+            include_bytes!("../assets/kenney_simplespace/ship_E32.png"),
             None,
         );
-        let antenna_texture =
-            Texture2D::from_file_with_format(include_bytes!("../assets/station_C.png"), None);
+        let resource_texture = Texture2D::from_file_with_format(
+            include_bytes!("../assets/kenney_simplespace/meteor_detailedLarge.png"),
+            None,
+        );
+        let antenna_texture = Texture2D::from_file_with_format(
+            include_bytes!("../assets/kenney_simplespace/station_C.png"),
+            None,
+        );
         let textures = [bot_texture, resource_texture, antenna_texture];
 
         Self {
