@@ -1,4 +1,5 @@
 use crate::animation::Animation;
+use crate::tooltip_renderer::draw_tooltip;
 use botnet_api::{Bay, Entity, EntityID, PartialEntity, PartialEntityType, Resource, BAY_SIZE};
 use macroquad::prelude::{
     clear_background, draw_circle, draw_texture_ex, get_time, rand, vec2, Color, Conf,
@@ -113,6 +114,7 @@ impl BayRenderer {
         clear_background(Color::from_rgba(50, 49, 59, 244));
         self.draw_ground();
         self.draw_entities(bay);
+        draw_tooltip(bay);
     }
 
     fn draw_ground(&self) {
