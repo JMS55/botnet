@@ -1,12 +1,13 @@
 mod animation;
 mod bay_renderer;
 mod bot_action_animations;
+mod tooltip_renderer;
 
 use crate::animation::Animation;
 use crate::bay_renderer::{window_conf, BayRenderer};
 use botnet::{BayExt, ReplayRecord};
 use botnet_api::Bay;
-use macroquad::prelude::next_frame;
+use macroquad::prelude::{is_key_pressed, next_frame, KeyCode};
 use rkyv::{Deserialize, Infallible};
 use std::env;
 use std::fs::File;
@@ -61,8 +62,14 @@ async fn main() {
     bay_renderer.prepare(&bay);
 
     // Main loop
+    let mut paused = false;
     let mut current_record = None;
     loop {
+        // Toggle paused when space is pressed
+        if is_key_pressed(KeyCode::Space) {
+            paused = !paused;
+        };
+
         // Load next record if needed
         if current_record.is_none() {
             current_record = load_next_record();
@@ -76,8 +83,8 @@ async fn main() {
         // Render the bay
         bay_renderer.draw_bay(&bay);
 
-        // Apply record when available and no animation is playing
-        if current_record.is_some() && bay_renderer.animation.is_none() {
+        // Apply record when available, no animation is playing, and not paused
+        if current_record.is_some() && bay_renderer.animation.is_none() && !paused {
             apply_record(current_record.take().unwrap(), &mut bay, &next_entity_id);
 
             bay_renderer.prepare(&bay);
