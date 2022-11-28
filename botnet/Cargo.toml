@@ -10,7 +10,7 @@ lto = true
 botnet_api = { version = "0.1", default-features = false, path = "../botnet_api" }
 wasmtime = "1.0"
 rkyv = "0.7"
-rayon = "1.5"
+rayon = "1.6"
 crossbeam-channel = "0.5"
 rand = "0.8"
 log = "0.4"
